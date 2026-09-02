@@ -1,0 +1,13 @@
+node_modules/
+deprecated/
+logs/
+*.log
+
+dist/
+dist-ssr/
+*.local
+
+.vscode/*
+!.vscode/extensions.json
+
+backend/.env

@@ -1,0 +1,74 @@
+/* lista de usuarios */
+.users-list { display: flex; flex-direction: column; gap: 6px; }
+.user-row {
+  display: grid; grid-template-columns: 40px 1fr auto auto;
+  align-items: center; gap: clamp(10px, 2vw, 20px);
+  padding: 14px clamp(12px, 2vw, 18px);
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; cursor: pointer; transition: border-color .2s, box-shadow .2s;
+  animation: fadeUp .3s ease both;
+  height: 72px;
+  box-shadow: 0 1px 3px rgba(44,24,16,.04);
+}
+.user-row:hover { border-color: var(--accent); box-shadow: 0 4px 16px rgba(200,85,42,.1); }
+.user-avatar-sm {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg3));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--serif); font-size: 16px; color: var(--accent); flex-shrink: 0;
+  margin-top: -13px;
+}
+.user-name  { font-family: var(--serif); font-size: 17px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 2px; font-weight: 400; font-style: italic; }
+.user-email { font-family: var(--mono); font-size: 11px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400; }
+.user-row .tag { margin-top: -13px; }
+
+/* detalhe de usuario */
+.ud-avatar { width: 60px; height: 60px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 12%, var(--bg3)); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); display: flex; align-items: center; justify-content: center; font-family: var(--serif); font-size: 24px; color: var(--accent); margin-bottom: 18px; }
+.ud-title  { font-family: var(--serif); font-size: clamp(28px, 4vw, 40px); color: var(--text); margin-bottom: 10px; font-style: italic; font-weight: 700; }
+.info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 28px; }
+.info-cell { background: var(--bg); padding: 14px 18px; }
+.info-cell-label { font-family: var(--mono); font-size: 10px; color: var(--dim); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; font-weight: 500; }
+.info-cell-val   { font-family: var(--mono); font-size: 13px; color: var(--muted); word-break: break-all; font-weight: 400; }
+
+/* responsividade */
+@media (max-width: 600px) {
+  .user-row { grid-template-columns: 40px 1fr auto; }
+}
+@media (max-width: 420px) {
+  .user-row .tag:last-child { display: none; }
+}
+/* 1. Estilização do Botão (como ele deve parecer) */
+.hamburger-btn {
+    display: none; /* Começa escondido no computador */
+    flex-direction: column;
+    justify-content: space-between;
+    width: 24px;
+    height: 18px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+/* 2. Criando os 3 risquinhos */
+.hamburger-btn span {
+    width: 100%;
+    height: 2px;
+    background-color: var(--text); /* Cor do seu tema creme pastel */
+    border-radius: 2px;
+    transition: 0.3s;
+}
+
+/* 3. Lógica de Visibilidade (Responsivo) */
+@media (max-width: 768px) {
+    .hamburger-btn {
+        display: flex; /* Aparece apenas em telas menores que 768px */
+    }
+
+    /* Opcional: Se quiser que o user-chip fique menor no celular */
+    .user-chip {
+        scale: 0.9;
+    }
+}
+
