@@ -17,6 +17,42 @@ async function verifyPassword(password, stored) {
   return crypto.timingSafeEqual(Buffer.from(parts[2], 'hex'), derived);
 }
 const router = express.Router();
+const SESSION_SECRET = process.env.SESSION_SECRET || process.env.JWT_SECRET || 'troque-esta-chave-em-producao';
+
+function sign(value) {
+  return crypto.createHmac('sha256', SESSION_SECRET).update(value).digest('base64url');
+}
+
+function createSession(user) {
+  const payload = Buffer.from(JSON.stringify({ id: user.id, role: user.role, exp: Date.now() + 8 * 60 * 60 * 1000 })).toString('base64url');
+  return `${payload}.${sign(payload)}`;
+}
+
+function readCookies(req) {
+  return Object.fromEntries(String(req.headers.cookie || '').split(';').filter(Boolean).map(part => {
+    const i = part.indexOf('=');
+    return [part.slice(0, i).trim(), decodeURIComponent(part.slice(i + 1))];
+  }));
+}
+
+function requireAuth(req, res, next) {
+  const token = readCookies(req).biblioteca_session;
+  if (!token) return res.status(401).json({ error: 'Autenticação necessária.' });
+  const [payload, signature] = token.split('.');
+  try {
+    const expected = sign(payload);
+    if (!signature || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) throw new Error('invalid');
+    const session = JSON.parse(Buffer.from(payload, 'base64url').toString());
+    if (!session.id || session.exp < Date.now()) throw new Error('expired');
+    req.user = session;
+    next();
+  } catch { return res.status(401).json({ error: 'Sessão inválida ou expirada.' }); }
+}
+
+function requireAdmin(req, res, next) {
+  if (req.user?.role !== 'admin') return res.status(403).json({ error: 'Acesso permitido somente para administradores.' });
+  next();
+}
 
 // Auth
 router.post('/auth/login', async (req, res) => {
@@ -29,9 +65,17 @@ router.post('/auth/login', async (req, res) => {
     const ok = await verifyPassword(password, user.password_hash);
     if (!ok) return res.status(401).json({ error: 'E-mail ou senha inválidos.' });
     delete user.password_hash;
+    const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+    res.setHeader('Set-Cookie', `biblioteca_session=${encodeURIComponent(createSession(user))}; HttpOnly; SameSite=Lax; Max-Age=28800; Path=/${secure}`);
     res.json({ user });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+router.post('/auth/logout', (_req, res) => {
+  res.setHeader('Set-Cookie', 'biblioteca_session=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/');
+  res.json({ message: 'Sessão encerrada.' });
+});
+
+router.use(requireAuth);
 
 // Dashboard
 router.get('/dashboard', async (_req, res) => {
@@ -118,7 +162,7 @@ router.post('/loans', async (req, res) => {
     if (book.rows[0].available_quantity < 1) throw Object.assign(new Error('Não há exemplares disponíveis para empréstimo.'), { status: 409 });
     const loan = await client.query(`INSERT INTO loans (book_id,borrower_name,borrower_registration,due_date,status) VALUES ($1,$2,$3,$4,'active') RETURNING *`, [book_id,borrower_name.trim(),borrower_registration?.trim()||null,due_date]);
     await client.query('UPDATE books SET available_quantity=available_quantity-1 WHERE id=$1', [book_id]);
-    await client.query(`INSERT INTO stock_movements (book_id,user_id,type,quantity,reason) VALUES ($1,$2,'loan',1,$3)`, [book_id,user_id||null,`Empréstimo para ${borrower_name.trim()}`]);
+    await client.query(`INSERT INTO stock_movements (book_id,user_id,type,quantity,reason) VALUES ($1,$2,'loan',1,$3)`, [book_id,req.user.id,`Empréstimo para ${borrower_name.trim()}`]);
     await client.query('COMMIT'); res.status(201).json(loan.rows[0]);
   } catch (e) { await client.query('ROLLBACK'); res.status(e.status || 500).json({ error: e.message }); }
   finally { client.release(); }
@@ -133,7 +177,7 @@ router.put('/loans/:id/return', async (req, res) => {
     if (loan.rows[0].status !== 'active') throw Object.assign(new Error('Este empréstimo já foi finalizado.'), { status: 409 });
     const updated = await client.query(`UPDATE loans SET status='returned', return_date=CURRENT_DATE WHERE id=$1 RETURNING *`, [req.params.id]);
     await client.query('UPDATE books SET available_quantity=LEAST(quantity, available_quantity+1) WHERE id=$1', [loan.rows[0].book_id]);
-    await client.query(`INSERT INTO stock_movements (book_id,user_id,type,quantity,reason) VALUES ($1,$2,'return',1,$3)`, [loan.rows[0].book_id,user_id||null,`Devolução de ${loan.rows[0].borrower_name}`]);
+    await client.query(`INSERT INTO stock_movements (book_id,user_id,type,quantity,reason) VALUES ($1,$2,'return',1,$3)`, [loan.rows[0].book_id,req.user.id,`Devolução de ${loan.rows[0].borrower_name}`]);
     await client.query('COMMIT'); res.json(updated.rows[0]);
   } catch (e) { await client.query('ROLLBACK'); res.status(e.status || 500).json({ error: e.message }); }
   finally { client.release(); }
@@ -146,11 +190,11 @@ router.get('/stock-movements', async (_req, res) => {
 });
 
 // Users
-router.get('/users', async (_req, res) => {
+router.get('/users', requireAdmin, async (_req, res) => {
   try { const r = await db.query('SELECT id,name,email,role,active,created_at FROM users ORDER BY name'); res.json(r.rows); }
   catch (e) { res.status(500).json({ error: e.message }); }
 });
-router.post('/users', async (req, res) => {
+router.post('/users', requireAdmin, async (req, res) => {
   const { name, email, password, role } = req.body;
   if (!name?.trim() || !email?.trim() || !password) return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios.' });
   try {
@@ -159,7 +203,7 @@ router.post('/users', async (req, res) => {
     res.status(201).json(r.rows[0]);
   } catch (e) { if (e.code === '23505') return res.status(409).json({ error: 'E-mail já cadastrado.' }); res.status(500).json({ error: e.message }); }
 });
-router.put('/users/:id', async (req, res) => {
+router.put('/users/:id', requireAdmin, async (req, res) => {
   const { name, email, role, active, password } = req.body;
   try {
     let r;
@@ -172,7 +216,7 @@ router.put('/users/:id', async (req, res) => {
     if (!r.rows.length) return res.status(404).json({ error: 'Usuário não encontrado.' }); res.json(r.rows[0]);
   } catch (e) { if (e.code === '23505') return res.status(409).json({ error: 'E-mail já cadastrado.' }); res.status(500).json({ error: e.message }); }
 });
-router.delete('/users/:id', async (req, res) => {
+router.delete('/users/:id', requireAdmin, async (req, res) => {
   try { const r = await db.query('UPDATE users SET active=FALSE WHERE id=$1 RETURNING id'); if (!r.rows.length) return res.status(404).json({ error: 'Usuário não encontrado.' }); res.json({ message: 'Usuário inativado.' }); }
   catch (e) { res.status(500).json({ error: e.message }); }
 });

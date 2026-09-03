@@ -1,30 +1,62 @@
-# Sistema de Controle de Acervo e Estoque de Livros
+# Sistema de Controle de Biblioteca
 
-Projeto reformulado para biblioteca física. Controla livros, estoque, empréstimos, devoluções, categorias, usuários e movimentações.
+Aplicação web para controle de acervo, estoque, empréstimos, devoluções, categorias, usuários e movimentações de uma biblioteca.
 
-## Stack
-- Frontend: HTML, CSS e JavaScript ES Modules
-- Backend: Node.js + Express
-- Banco: PostgreSQL/Supabase
+## Objetivo do projeto
 
-## Banco
-A estrutura esperada no schema `public` é:
-- `users`
-- `categories`
-- `books`
-- `loans`
-- `stock_movements`
+O sistema foi desenvolvido para centralizar a operação de uma biblioteca e reduzir o controle manual de livros e empréstimos. O foco atual é uma biblioteca física ou escolar, com possibilidade de adaptação futura para outras unidades de acervo.
 
-As views do dashboard são criadas pela migração do banco. O backup antigo fica no schema `backup_2026_09_02`.
+## Tecnologias
 
-## Executar localmente
-1. `cd backend && npm install`
-2. Copie `.env.example` para `.env` e informe `DATABASE_URL`.
-3. Opcionalmente informe `ADMIN_NAME`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`. Se o e-mail ainda não existir, o backend cria o primeiro administrador automaticamente.
-4. `npm start`
-5. Abra `http://localhost:3000`.
+- **Frontend:** HTML, CSS e JavaScript com módulos ES.
+- **Backend:** Node.js e Express.
+- **Banco de dados:** PostgreSQL hospedado no Supabase.
+- **Deploy:** Render.
 
-## Teste inicial
-O projeto original foi transformado em um sistema simples de biblioteca. O login leva ao dashboard e às telas de Livros, Empréstimos, Movimentações, Categorias e Usuários.
+## Funcionalidades atuais
 
-O endpoint de empréstimo usa transação: cria o empréstimo, reduz `available_quantity` e registra uma movimentação. A devolução faz o inverso.
+O sistema possui dashboard com indicadores, cadastro e inativação de livros, categorias, usuários, registro de empréstimos, devoluções e histórico de movimentações. As operações de empréstimo e devolução utilizam transações no banco para manter o estoque consistente.
+
+## Estrutura
+
+```text
+backend/
+  db.js                  conexão PostgreSQL
+  server.js              servidor Express
+  routes/libraryRoutes.js rotas da aplicação
+frontend/
+  index.html              painel administrativo
+  home.html               apresentação do sistema
+  css/library.css         estilos do painel
+  js/                     módulos do frontend
+ database/
+  README.md               referência do modelo atual
+ uploads/covers/          capas locais da versão de demonstração
+```
+
+## Execução local
+
+Na raiz do projeto, instale as dependências do backend:
+
+```bash
+cd backend
+npm install
+```
+
+Crie um arquivo `.env` a partir de `.env.example` e informe a `DATABASE_URL` do PostgreSQL. Para criar um administrador inicial em uma base de testes, podem ser definidos `ADMIN_NAME`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`.
+
+Depois, execute:
+
+```bash
+npm start
+```
+
+Acesse `http://localhost:3000`.
+
+## Observação de segurança
+
+Antes de usar o sistema com dados reais, é necessário implementar sessão autenticada no backend, autorização por função, restrição de CORS e armazenamento persistente das capas. A versão atual é uma base de demonstração do TCC e não deve ser publicada com a senha de administrador de exemplo.
+
+## Banco de dados
+
+O backend utiliza as tabelas `users`, `categories`, `books`, `loans` e `stock_movements`, além da view `dashboard_summary`. O arquivo SQL legado do antigo projeto de comércio eletrônico foi removido da árvore atual e permanece somente no backup gerado durante a limpeza.
