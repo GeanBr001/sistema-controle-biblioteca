@@ -112,6 +112,32 @@ router.delete('/categories/:id', async (req, res) => {
   catch (e) { if (e.code === '23503') return res.status(409).json({ error: 'Não é possível remover uma categoria que possui livros.' }); res.status(500).json({ error: e.message }); }
 });
 
+// Readers / Leitores
+router.get('/readers', async (_req, res) => {
+  try { const r = await db.query(`SELECT r.*, COUNT(l.id) FILTER (WHERE l.status='active')::int AS active_loans FROM readers r LEFT JOIN loans l ON l.reader_id=r.id GROUP BY r.id ORDER BY r.name`); res.json(r.rows); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.post('/readers', async (req, res) => {
+  const { name, email, phone, registration } = req.body;
+  if (!name?.trim()) return res.status(400).json({ error: 'Nome do leitor é obrigatório.' });
+  try {
+    const r = await db.query(`INSERT INTO readers (name,email,phone,registration) VALUES ($1,$2,$3,$4) RETURNING *`, [name.trim(), email?.trim().toLowerCase() || null, phone?.trim() || null, registration?.trim() || null]);
+    res.status(201).json(r.rows[0]);
+  } catch (e) { if (e.code === '23505') return res.status(409).json({ error: 'E-mail já cadastrado para outro leitor.' }); res.status(500).json({ error: e.message }); }
+});
+router.put('/readers/:id', async (req, res) => {
+  const { name, email, phone, registration, active } = req.body;
+  if (!name?.trim()) return res.status(400).json({ error: 'Nome do leitor é obrigatório.' });
+  try {
+    const r = await db.query(`UPDATE readers SET name=$1,email=$2,phone=$3,registration=$4,active=$5,updated_at=NOW() WHERE id=$6 RETURNING *`, [name.trim(), email?.trim().toLowerCase() || null, phone?.trim() || null, registration?.trim() || null, active !== false, req.params.id]);
+    if (!r.rows.length) return res.status(404).json({ error: 'Leitor não encontrado.' }); res.json(r.rows[0]);
+  } catch (e) { if (e.code === '23505') return res.status(409).json({ error: 'E-mail já cadastrado para outro leitor.' }); res.status(500).json({ error: e.message }); }
+});
+router.delete('/readers/:id', async (req, res) => {
+  try { const r = await db.query('UPDATE readers SET active=FALSE, updated_at=NOW() WHERE id=$1 RETURNING id', [req.params.id]); if (!r.rows.length) return res.status(404).json({ error: 'Leitor não encontrado.' }); res.json({ message: 'Leitor inativado.' }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Books
 router.get('/books', async (_req, res) => {
   try {
@@ -143,26 +169,34 @@ router.delete('/books/:id', async (req, res) => {
   try { const r = await db.query('UPDATE books SET active=FALSE WHERE id=$1 RETURNING id', [req.params.id]); if (!r.rows.length) return res.status(404).json({ error: 'Livro não encontrado.' }); res.json({ message: 'Livro inativado.' }); }
   catch (e) { res.status(500).json({ error: e.message }); }
 });
+router.put('/books/:id/reactivate', async (req, res) => {
+  try { const r = await db.query('UPDATE books SET active=TRUE WHERE id=$1 RETURNING *', [req.params.id]); if (!r.rows.length) return res.status(404).json({ error: 'Livro não encontrado.' }); res.json(r.rows[0]); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 // Loans
 router.get('/loans', async (_req, res) => {
   try {
-    const r = await db.query(`SELECT l.*, b.title AS book_title, b.author AS book_author FROM loans l JOIN books b ON b.id=l.book_id ORDER BY l.created_at DESC`);
+    const r = await db.query(`SELECT l.*, b.title AS book_title, b.author AS book_author, r.name AS reader_name, r.email AS reader_email, r.phone AS reader_phone, r.registration AS reader_registration FROM loans l JOIN books b ON b.id=l.book_id LEFT JOIN readers r ON r.id=l.reader_id ORDER BY l.created_at DESC`);
     res.json(r.rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 router.post('/loans', async (req, res) => {
-  const { book_id, borrower_name, borrower_registration, due_date, user_id } = req.body;
-  if (!book_id || !borrower_name?.trim() || !due_date) return res.status(400).json({ error: 'Livro, nome do responsável e data de devolução são obrigatórios.' });
+  const { book_id, reader_id, borrower_name, borrower_registration, due_date, loan_date } = req.body;
+  if (!book_id || (!reader_id && !borrower_name?.trim()) || !due_date) return res.status(400).json({ error: 'Livro, leitor e data de devolução são obrigatórios.' });
   const client = await db.connect();
   try {
     await client.query('BEGIN');
     const book = await client.query('SELECT id, title, available_quantity, active FROM books WHERE id=$1 FOR UPDATE', [book_id]);
     if (!book.rows.length || !book.rows[0].active) throw Object.assign(new Error('Livro não encontrado ou inativo.'), { status: 404 });
     if (book.rows[0].available_quantity < 1) throw Object.assign(new Error('Não há exemplares disponíveis para empréstimo.'), { status: 409 });
-    const loan = await client.query(`INSERT INTO loans (book_id,borrower_name,borrower_registration,due_date,status) VALUES ($1,$2,$3,$4,'active') RETURNING *`, [book_id,borrower_name.trim(),borrower_registration?.trim()||null,due_date]);
+    let reader = null;
+    if (reader_id) { const rr = await client.query('SELECT id,name,email,phone,registration,active FROM readers WHERE id=$1 FOR UPDATE', [reader_id]); if (!rr.rows.length || !rr.rows[0].active) throw Object.assign(new Error('Leitor não encontrado ou inativo.'), { status: 404 }); reader = rr.rows[0]; }
+    const finalName = reader?.name || borrower_name.trim();
+    const finalRegistration = reader?.registration || borrower_registration?.trim() || null;
+    const loan = await client.query(`INSERT INTO loans (book_id,reader_id,borrower_name,borrower_registration,loan_date,due_date,status) VALUES ($1,$2,$3,$4,COALESCE($5::date,CURRENT_DATE),$6,'active') RETURNING *`, [book_id, reader?.id || null, finalName, finalRegistration, loan_date || null, due_date]);
     await client.query('UPDATE books SET available_quantity=available_quantity-1 WHERE id=$1', [book_id]);
-    await client.query(`INSERT INTO stock_movements (book_id,user_id,type,quantity,reason) VALUES ($1,$2,'loan',1,$3)`, [book_id,req.user.id,`Empréstimo para ${borrower_name.trim()}`]);
+    await client.query(`INSERT INTO stock_movements (book_id,user_id,type,quantity,reason) VALUES ($1,$2,'loan',1,$3)`, [book_id,req.user.id,`Empréstimo para ${finalName}`]);
     await client.query('COMMIT'); res.status(201).json(loan.rows[0]);
   } catch (e) { await client.query('ROLLBACK'); res.status(e.status || 500).json({ error: e.message }); }
   finally { client.release(); }
@@ -175,7 +209,7 @@ router.put('/loans/:id/return', async (req, res) => {
     const loan = await client.query(`SELECT l.*, b.title FROM loans l JOIN books b ON b.id=l.book_id WHERE l.id=$1 FOR UPDATE`, [req.params.id]);
     if (!loan.rows.length) throw Object.assign(new Error('Empréstimo não encontrado.'), { status: 404 });
     if (loan.rows[0].status !== 'active') throw Object.assign(new Error('Este empréstimo já foi finalizado.'), { status: 409 });
-    const updated = await client.query(`UPDATE loans SET status='returned', return_date=CURRENT_DATE WHERE id=$1 RETURNING *`, [req.params.id]);
+    const updated = await client.query(`UPDATE loans SET status='returned', return_date=CURRENT_DATE, returned_at=NOW() WHERE id=$1 RETURNING *`, [req.params.id]);
     await client.query('UPDATE books SET available_quantity=LEAST(quantity, available_quantity+1) WHERE id=$1', [loan.rows[0].book_id]);
     await client.query(`INSERT INTO stock_movements (book_id,user_id,type,quantity,reason) VALUES ($1,$2,'return',1,$3)`, [loan.rows[0].book_id,req.user.id,`Devolução de ${loan.rows[0].borrower_name}`]);
     await client.query('COMMIT'); res.json(updated.rows[0]);
