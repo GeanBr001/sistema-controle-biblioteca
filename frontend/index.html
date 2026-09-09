@@ -1,14 +1,633 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Biblioteca — Controle de Acervo</title><link rel="icon" href="assets/img/icon.png"><link rel="stylesheet" href="css/library.css"></head>
-<body><div id="login-page"></div><div id="app-shell" class="app-shell" style="display:none"><aside class="sidebar"><div class="brand"><span class="brand-icon">▮▮</span><div><strong>Biblioteca</strong><small>Controle de Acervo</small></div></div><nav class="side-nav" aria-label="Navegação principal"><button data-tab="dashboard" class="active"><span>▦</span>Dashboard</button><button data-tab="books"><span>▤</span>Livros</button><button data-tab="readers"><span>♙</span>Leitores</button><button data-tab="loans"><span>↗</span>Empréstimos</button><button data-tab="returns"><span>↩</span>Devoluções</button><button data-tab="movements"><span>⇄</span>Movimentações</button><button data-tab="categories"><span>◫</span>Categorias</button><button data-tab="reports"><span>▥</span>Relatórios</button><button data-tab="users" data-admin><span>♙</span>Usuários</button><button data-tab="settings" data-admin><span>⚙</span>Configurações</button></nav><button class="side-logout" onclick="App.logout()"><span>↪</span>Sair</button></aside><div class="workspace"><header class="topbar"><div class="topbar-title"><button class="mobile-menu" aria-label="Abrir menu">☰</button><span id="page-kicker">Visão geral</span><strong id="page-title">Dashboard</strong></div><div class="topbar-user"><span class="avatar">♙</span><span><b id="user-name"></b><small id="user-role"></small></span><button class="theme-toggle" onclick="App.toggleTheme()" aria-label="Alternar tema">◐</button><button class="user-chevron">⌄</button></div></header><main>
-<section id="view-dashboard" class="view active"><div class="page-head"><div><span class="eyebrow">VISÃO GERAL</span><h1>Dashboard</h1><p>Acompanhe o acervo, estoque e empréstimos da unidade.</p></div></div><div id="dash-cards" class="stats"></div><div class="dashboard-grid"><div class="panel"><div class="panel-head"><h2>Livros com estoque baixo</h2><button class="text-btn" data-tab="books">Ver todos</button></div><table><thead><tr><th>Livro</th><th>Total</th><th>Disponíveis</th><th>Mínimo</th></tr></thead><tbody id="low-stock-table"></tbody></table></div><div class="panel"><div class="panel-head"><h2>Últimos empréstimos</h2><button class="text-btn" data-tab="loans">Ver todos</button></div><table><thead><tr><th>Livro</th><th>Leitor</th><th>Empréstimo</th><th>Devolução</th></tr></thead><tbody id="dashboard-table"></tbody></table></div></div></section>
-<section id="view-books" class="view"><div class="page-head"><div><span class="eyebrow">ACERVO</span><h1>Livros</h1><p>Cadastre títulos, controle exemplares e reative livros inativos.</p></div><button class="btn primary" onclick="App.openBookModal()">+ Novo livro</button></div><div class="toolbar"><input id="book-search" placeholder="Buscar por título, autor ou categoria" oninput="App.renderBooks()"></div><div class="panel"><table><thead><tr><th>Livro</th><th>Categoria</th><th>Total</th><th>Disponíveis</th><th>Estoque</th><th>Status</th><th>Ações</th></tr></thead><tbody id="books-table"></tbody></table></div></section>
-<section id="view-readers" class="view"><div class="page-head"><div><span class="eyebrow">ATENDIMENTO</span><h1>Leitores</h1><p>Cadastre nome, e-mail, telefone e identificação para facilitar o contato.</p></div><button class="btn primary" onclick="App.openReaderModal()">+ Novo leitor</button></div><div class="toolbar"><input id="reader-search" placeholder="Buscar por nome, e-mail ou telefone" oninput="App.renderReaders()"></div><div class="panel"><table><thead><tr><th>Leitor</th><th>E-mail</th><th>Telefone</th><th>Empréstimos ativos</th><th>Status</th><th>Ações</th></tr></thead><tbody id="readers-table"></tbody></table></div></section>
-<section id="view-loans" class="view"><div class="page-head"><div><span class="eyebrow">CIRCULAÇÃO</span><h1>Empréstimos</h1><p>Consulte empréstimos ativos e os dados de contato do leitor.</p></div><button class="btn primary" onclick="App.openLoanModal()">+ Novo empréstimo</button></div><div class="panel"><table><thead><tr><th>Livro</th><th>Leitor / contato</th><th>Empréstimo</th><th>Devolução prevista</th><th>Status</th><th>Ação</th></tr></thead><tbody id="loans-table"></tbody></table></div></section>
-<section id="view-returns" class="view"><div class="page-head"><div><span class="eyebrow">CIRCULAÇÃO</span><h1>Devoluções</h1><p>Histórico separado dos livros já devolvidos.</p></div></div><div class="panel"><table><thead><tr><th>Livro</th><th>Leitor / contato</th><th>Empréstimo</th><th>Devolução realizada</th><th>Status</th></tr></thead><tbody id="returns-table"></tbody></table></div></section>
-<section id="view-movements" class="view"><div class="page-head"><div><span class="eyebrow">HISTÓRICO</span><h1>Movimentações</h1><p>Entradas, saídas, empréstimos e devoluções registrados no acervo.</p></div></div><div class="panel"><table><thead><tr><th>Data</th><th>Livro</th><th>Tipo</th><th>Qtd.</th><th>Motivo</th><th>Usuário</th></tr></thead><tbody id="movements-table"></tbody></table></div></section>
-<section id="view-categories" class="view"><div class="page-head"><div><span class="eyebrow">ORGANIZAÇÃO</span><h1>Categorias</h1><p>Organize os livros por área.</p></div><button class="btn primary" onclick="App.openCategoryModal()">+ Nova categoria</button></div><div class="panel"><table><thead><tr><th>ID</th><th>Nome</th><th>Descrição</th><th>Ações</th></tr></thead><tbody id="categories-table"></tbody></table></div></section>
-<section id="view-users" class="view"><div class="page-head"><div><span class="eyebrow">ACESSO</span><h1>Usuários</h1><p>Gerencie quem pode operar o sistema.</p></div><button class="btn primary" onclick="App.openUserModal()">+ Novo usuário</button></div><div class="panel"><table><thead><tr><th>Usuário</th><th>Função</th><th>Status</th><th>Ação</th></tr></thead><tbody id="users-table"></tbody></table></div></section>
-<section id="view-reports" class="view"><div class="page-head"><div><span class="eyebrow">ANÁLISES</span><h1>Relatórios</h1><p>Indicadores para acompanhar o acervo, a circulação e os atrasos.</p></div><button class="btn" onclick="window.print()">Imprimir relatório</button></div><div id="report-cards" class="stats"></div><div class="dashboard-grid"><div class="panel"><div class="panel-head"><h2>Livros mais emprestados</h2></div><table><thead><tr><th>Livro</th><th>Total de empréstimos</th></tr></thead><tbody id="report-ranking"></tbody></table></div><div class="panel"><div class="panel-head"><h2>Empréstimos em atraso</h2></div><table><thead><tr><th>Livro</th><th>Leitor</th><th>Vencimento</th></tr></thead><tbody id="report-overdue"></tbody></table></div></div></section>
-<section id="view-settings" class="view"><div class="page-head"><div><span class="eyebrow">SISTEMA</span><h1>Configurações</h1><p>Defina as regras padrão da unidade e a aparência do painel.</p></div></div><div class="panel settings-panel"><form id="settings-form" onsubmit="event.preventDefault();App.saveSettings()" class="form-grid"><label>Nome da instituição<input name="institution" required></label><label>Prazo padrão de empréstimo (dias)<input name="defaultDueDays" type="number" min="1" required></label><label>Mínimo padrão de estoque<input name="defaultMinimumStock" type="number" min="0" required></label><label>Tema do painel<select id="settings-theme"><option value="dark">Escuro</option><option value="light">Claro</option></select></label><div class="full form-actions"><button class="btn primary">Salvar configurações</button></div></form></div><div class="panel info-panel"><h2>Recursos administrativos</h2><p>Use esta área para definir regras padrão da biblioteca. O prazo será aplicado automaticamente a novos empréstimos e o estoque mínimo a novos livros.</p></div></section>
-</main></div></div><div id="modal" class="modal"><div class="modal-card"><div class="modal-head"><h2 id="modal-title"></h2><button onclick="App.closeModal()" aria-label="Fechar">×</button></div><div id="modal-body"></div></div></div><script type="module" src="js/init.js"></script></body></html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Biblioteca — Controle de Acervo</title>
+    <link rel="icon" href="assets/img/icon.png" />
+    <link rel="stylesheet" href="css/library.css" />
+  </head>
+  <body>
+    <div id="login-page"></div>
+    <div id="app-shell" class="app-shell" style="display: none">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-icon" aria-label="Biblioteca">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M5 4.5A2.5 2.5 0 0 1 7.5 2H20v17H7.5A2.5 2.5 0 0 0 5 21.5v-17Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M5 18.5A2.5 2.5 0 0 1 7.5 16H20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
+              <path
+                d="M9 6h7M9 9h7"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+          </span>
+          <div>
+            <strong>Biblioteca</strong><small>Controle de Acervo</small>
+          </div>
+        </div>
+        <nav class="side-nav" aria-label="Navegação principal">
+          <button data-tab="dashboard" class="active">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24">
+                <rect
+                  x="4"
+                  y="4"
+                  width="6"
+                  height="6"
+                  rx="1"
+                  fill="currentColor"
+                />
+                <rect
+                  x="14"
+                  y="4"
+                  width="6"
+                  height="6"
+                  rx="1"
+                  fill="currentColor"
+                />
+                <rect
+                  x="4"
+                  y="14"
+                  width="6"
+                  height="6"
+                  rx="1"
+                  fill="currentColor"
+                />
+                <rect
+                  x="14"
+                  y="14"
+                  width="6"
+                  height="6"
+                  rx="1"
+                  fill="currentColor"
+                />
+              </svg>
+            </span>
+            Dashboard</button
+          ><button data-tab="books">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M5 4.5A2.5 2.5 0 0 1 7.5 2H20v17H7.5A2.5 2.5 0 0 0 5 21.5v-17Z"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                />
+                <path
+                  d="M5 18.5A2.5 2.5 0 0 1 7.5 16H20"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                />
+              </svg>
+            </span>
+            Livros</button
+          ><button data-tab="readers"><span>♙</span>Leitores</button
+          ><button data-tab="loans">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M5 12h12"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="m13 7 5 5-5 5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+            Empréstimos</button
+          ><button data-tab="returns">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M19 12H7"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="m11 7-5 5 5 5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+            Devoluções</button
+          ><button data-tab="movements"><span>⇄</span>Movimentações</button
+          ><button data-tab="categories">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M4 5v6l9 9 7-7-9-9H4Z"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linejoin="round"
+                />
+                <circle cx="8" cy="8" r="1.2" fill="currentColor" />
+              </svg>
+            </span>
+            Categorias</button
+          ><button data-tab="reports">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M4 20V10"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M10 20V4"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M16 20v-7"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M3 20h18"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </span>
+            Relatórios</button
+          ><button data-tab="users" data-admin>
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24">
+                <circle
+                  cx="10"
+                  cy="8"
+                  r="3"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                />
+                <path
+                  d="M4 20a6 6 0 0 1 12 0"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+                <circle
+                  cx="18"
+                  cy="17"
+                  r="3"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                />
+                <path
+                  d="M18 15.5v3M16.5 17h3"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </span>
+            Usuários</button
+          ><button data-tab="settings" data-admin>
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24">
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="3"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                />
+                <path
+                  d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 1.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.1h-2.6V20a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-1.8-1.8.1-.1A1.7 1.7 0 0 0 8 15a1.7 1.7 0 0 0-1.6-1H6v-2.6h.4A1.7 1.7 0 0 0 8 10a1.7 1.7 0 0 0-.3-1.9l-.1-.1 1.8-1.8.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.1h2.6V5a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1 1.8 1.8-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1V14h-.1a1.7 1.7 0 0 0-1.6 1Z"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+            Configurações
+          </button>
+        </nav>
+        <button class="side-logout" onclick="App.logout()">
+          <span>↪</span>Sair
+        </button>
+      </aside>
+      <div class="workspace">
+        <header class="topbar">
+          <div class="topbar-title">
+            <button class="mobile-menu" aria-label="Abrir menu">☰</button
+            ><span id="page-kicker">Visão geral</span
+            ><strong id="page-title">Dashboard</strong>
+          </div>
+          <div class="topbar-user">
+            <span class="avatar">♙</span
+            ><span><b id="user-name"></b><small id="user-role"></small></span
+            ><button
+              class="theme-toggle"
+              onclick="App.toggleTheme()"
+              aria-label="Alternar tema"
+            >
+              ◐</button
+            ><button class="user-chevron">⌄</button>
+          </div>
+        </header>
+        <main>
+          <section id="view-dashboard" class="view active">
+            <div class="page-head">
+              <div>
+                <span class="eyebrow">VISÃO GERAL</span>
+                <h1>Dashboard</h1>
+                <p>Acompanhe o acervo, estoque e empréstimos da unidade.</p>
+              </div>
+            </div>
+            <div id="dash-cards" class="stats"></div>
+            <div class="dashboard-grid">
+              <div class="panel">
+                <div class="panel-head">
+                  <h2>Livros com estoque baixo</h2>
+                  <button class="text-btn" data-tab="books">Ver todos</button>
+                </div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Livro</th>
+                      <th>Total</th>
+                      <th>Disponíveis</th>
+                      <th>Mínimo</th>
+                    </tr>
+                  </thead>
+                  <tbody id="low-stock-table"></tbody>
+                </table>
+              </div>
+              <div class="panel">
+                <div class="panel-head">
+                  <h2>Últimos empréstimos</h2>
+                  <button class="text-btn" data-tab="loans">Ver todos</button>
+                </div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Livro</th>
+                      <th>Leitor</th>
+                      <th>Empréstimo</th>
+                      <th>Devolução</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashboard-table"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+          <section id="view-books" class="view">
+            <div class="page-head">
+              <div>
+                <span class="eyebrow">ACERVO</span>
+                <h1>Livros</h1>
+                <p>
+                  Cadastre títulos, controle exemplares e reative livros
+                  inativos.
+                </p>
+              </div>
+              <button class="btn primary" onclick="App.openBookModal()">
+                + Novo livro
+              </button>
+            </div>
+            <div class="toolbar">
+              <input
+                id="book-search"
+                placeholder="Buscar por título, autor ou categoria"
+                oninput="App.renderBooks()"
+              />
+            </div>
+            <div class="panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Livro</th>
+                    <th>Categoria</th>
+                    <th>Total</th>
+                    <th>Disponíveis</th>
+                    <th>Estoque</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="books-table"></tbody>
+              </table>
+            </div>
+          </section>
+          <section id="view-readers" class="view">
+            <div class="page-head">
+              <div>
+                <span class="eyebrow">ATENDIMENTO</span>
+                <h1>Leitores</h1>
+                <p>
+                  Cadastre nome, e-mail, telefone e identificação para facilitar
+                  o contato.
+                </p>
+              </div>
+              <button class="btn primary" onclick="App.openReaderModal()">
+                + Novo leitor
+              </button>
+            </div>
+            <div class="toolbar">
+              <input
+                id="reader-search"
+                placeholder="Buscar por nome, e-mail ou telefone"
+                oninput="App.renderReaders()"
+              />
+            </div>
+            <div class="panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Leitor</th>
+                    <th>E-mail</th>
+                    <th>Telefone</th>
+                    <th>Empréstimos ativos</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="readers-table"></tbody>
+              </table>
+            </div>
+          </section>
+          <section id="view-loans" class="view">
+            <div class="page-head">
+              <div>
+                <span class="eyebrow">CIRCULAÇÃO</span>
+                <h1>Empréstimos</h1>
+                <p>
+                  Consulte empréstimos ativos e os dados de contato do leitor.
+                </p>
+              </div>
+              <button class="btn primary" onclick="App.openLoanModal()">
+                + Novo empréstimo
+              </button>
+            </div>
+            <div class="panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Livro</th>
+                    <th>Leitor / contato</th>
+                    <th>Empréstimo</th>
+                    <th>Devolução prevista</th>
+                    <th>Status</th>
+                    <th>Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="loans-table"></tbody>
+              </table>
+            </div>
+          </section>
+          <section id="view-returns" class="view">
+            <div class="page-head">
+              <div>
+                <span class="eyebrow">CIRCULAÇÃO</span>
+                <h1>Devoluções</h1>
+                <p>Histórico separado dos livros já devolvidos.</p>
+              </div>
+            </div>
+            <div class="panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Livro</th>
+                    <th>Leitor / contato</th>
+                    <th>Empréstimo</th>
+                    <th>Devolução realizada</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="returns-table"></tbody>
+              </table>
+            </div>
+          </section>
+          <section id="view-movements" class="view">
+            <div class="page-head">
+              <div>
+                <span class="eyebrow">HISTÓRICO</span>
+                <h1>Movimentações</h1>
+                <p>
+                  Entradas, saídas, empréstimos e devoluções registrados no
+                  acervo.
+                </p>
+              </div>
+            </div>
+            <div class="panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Livro</th>
+                    <th>Tipo</th>
+                    <th>Qtd.</th>
+                    <th>Motivo</th>
+                    <th>Usuário</th>
+                  </tr>
+                </thead>
+                <tbody id="movements-table"></tbody>
+              </table>
+            </div>
+          </section>
+          <section id="view-categories" class="view">
+            <div class="page-head">
+              <div>
+                <span class="eyebrow">ORGANIZAÇÃO</span>
+                <h1>Categorias</h1>
+                <p>Organize os livros por área.</p>
+              </div>
+              <button class="btn primary" onclick="App.openCategoryModal()">
+                + Nova categoria
+              </button>
+            </div>
+            <div class="panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Descrição</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="categories-table"></tbody>
+              </table>
+            </div>
+          </section>
+          <section id="view-users" class="view">
+            <div class="page-head">
+              <div>
+                <span class="eyebrow">ACESSO</span>
+                <h1>Usuários</h1>
+                <p>Gerencie quem pode operar o sistema.</p>
+              </div>
+              <button class="btn primary" onclick="App.openUserModal()">
+                + Novo usuário
+              </button>
+            </div>
+            <div class="panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Usuário</th>
+                    <th>Função</th>
+                    <th>Status</th>
+                    <th>Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="users-table"></tbody>
+              </table>
+            </div>
+          </section>
+          <section id="view-reports" class="view">
+            <div class="page-head">
+              <div>
+                <span class="eyebrow">ANÁLISES</span>
+                <h1>Relatórios</h1>
+                <p>
+                  Indicadores para acompanhar o acervo, a circulação e os
+                  atrasos.
+                </p>
+              </div>
+              <button class="btn" onclick="window.print()">
+                Imprimir relatório
+              </button>
+            </div>
+            <div id="report-cards" class="stats"></div>
+            <div class="dashboard-grid">
+              <div class="panel">
+                <div class="panel-head"><h2>Livros mais emprestados</h2></div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Livro</th>
+                      <th>Total de empréstimos</th>
+                    </tr>
+                  </thead>
+                  <tbody id="report-ranking"></tbody>
+                </table>
+              </div>
+              <div class="panel">
+                <div class="panel-head"><h2>Empréstimos em atraso</h2></div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Livro</th>
+                      <th>Leitor</th>
+                      <th>Vencimento</th>
+                    </tr>
+                  </thead>
+                  <tbody id="report-overdue"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+          <section id="view-settings" class="view">
+            <div class="page-head">
+              <div>
+                <span class="eyebrow">SISTEMA</span>
+                <h1>Configurações</h1>
+                <p>
+                  Defina as regras padrão da unidade e a aparência do painel.
+                </p>
+              </div>
+            </div>
+            <div class="panel settings-panel">
+              <form
+                id="settings-form"
+                onsubmit="
+                  event.preventDefault();
+                  App.saveSettings();
+                "
+                class="form-grid"
+              >
+                <label
+                  >Nome da instituição<input
+                    name="institution"
+                    required /></label
+                ><label
+                  >Prazo padrão de empréstimo (dias)<input
+                    name="defaultDueDays"
+                    type="number"
+                    min="1"
+                    required /></label
+                ><label
+                  >Mínimo padrão de estoque<input
+                    name="defaultMinimumStock"
+                    type="number"
+                    min="0"
+                    required /></label
+                ><label
+                  >Tema do painel<select id="settings-theme">
+                    <option value="dark">Escuro</option>
+                    <option value="light">Claro</option>
+                  </select></label
+                >
+                <div class="full form-actions">
+                  <button class="btn primary">Salvar configurações</button>
+                </div>
+              </form>
+            </div>
+            <div class="panel info-panel">
+              <h2>Recursos administrativos</h2>
+              <p>
+                Use esta área para definir regras padrão da biblioteca. O prazo
+                será aplicado automaticamente a novos empréstimos e o estoque
+                mínimo a novos livros.
+              </p>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+    <div id="modal" class="modal">
+      <div class="modal-card">
+        <div class="modal-head">
+          <h2 id="modal-title"></h2>
+          <button onclick="App.closeModal()" aria-label="Fechar">×</button>
+        </div>
+        <div id="modal-body"></div>
+      </div>
+    </div>
+    <script type="module" src="js/init.js"></script>
+  </body>
+</html>
