@@ -112,6 +112,26 @@ router.delete('/categories/:id', async (req, res) => {
   catch (e) { if (e.code === '23503') return res.status(409).json({ error: 'Não é possível remover uma categoria que possui livros.' }); res.status(500).json({ error: e.message }); }
 });
 
+// Catalog lookup — consulta pública de metadados, sempre confirmada pelo bibliotecário antes de salvar.
+const catalogCache = new Map();
+router.get('/catalog/lookup', async (req, res) => {
+  const rawIsbn = String(req.query.isbn || '').replace(/[^0-9Xx]/g, '').toUpperCase();
+  if (rawIsbn.length < 10) return res.status(400).json({ error: 'Informe um ISBN válido.' });
+  const cached = catalogCache.get(rawIsbn);
+  if (cached && cached.expires > Date.now()) return res.json(cached.data);
+  try {
+    const response = await fetch(`https://openlibrary.org/search.json?isbn=${encodeURIComponent(rawIsbn)}&limit=5`, { headers: { 'User-Agent': 'Biblioteca-TCC/1.0 (contato: admin@biblioteca.local)' } });
+    if (!response.ok) throw new Error('A fonte de catálogo não respondeu.');
+    const payload = await response.json();
+    const doc = payload.docs?.[0];
+    if (!doc) return res.status(404).json({ error: 'Nenhum livro encontrado para esse ISBN.' });
+    const isbn = doc.isbn?.find(x => x.length === 13) || doc.isbn?.[0] || rawIsbn;
+    const data = { title: doc.title || '', author: doc.author_name?.join(', ') || '', publisher: doc.publisher?.[0] || '', publication_year: doc.first_publish_year || '', isbn, description: '', category: doc.subject?.[0] || '', cover_image: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg?default=false` : `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`, source: 'Open Library' };
+    catalogCache.set(rawIsbn, { data, expires: Date.now() + 6 * 60 * 60 * 1000 });
+    res.json(data);
+  } catch (e) { res.status(502).json({ error: 'Não foi possível consultar o catálogo agora.' }); }
+});
+
 // Readers / Leitores
 router.get('/readers', async (_req, res) => {
   try { const r = await db.query(`SELECT r.*, COUNT(l.id) FILTER (WHERE l.status='active')::int AS active_loans FROM readers r LEFT JOIN loans l ON l.reader_id=r.id GROUP BY r.id ORDER BY r.name`); res.json(r.rows); }
