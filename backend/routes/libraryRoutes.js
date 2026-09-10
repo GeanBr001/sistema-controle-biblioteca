@@ -156,11 +156,11 @@ router.post('/books', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 router.put('/books/:id', async (req, res) => {
-  const { title, author, isbn, publisher, publication_year, description, category_id, quantity, minimum_quantity, active } = req.body;
+  const { title, author, isbn, publisher, publication_year, description, category_id, quantity, minimum_quantity, active, cover_image } = req.body;
   const q = Number(quantity);
   if (!title?.trim() || !author?.trim() || !category_id || !Number.isInteger(q) || q < 0) return res.status(400).json({ error: 'Dados do livro inválidos.' });
   try {
-    const r = await db.query(`UPDATE books SET title=$1,author=$2,isbn=$3,publisher=$4,publication_year=$5,description=$6,category_id=$7,quantity=$8,available_quantity=GREATEST(0, $8 - (quantity - available_quantity)),minimum_quantity=$9,active=$10 WHERE id=$11 RETURNING *`, [title.trim(),author.trim(),isbn?.trim()||null,publisher?.trim()||null,publication_year||null,description?.trim()||null,category_id,q,minimum_quantity ?? 2,active !== false,req.params.id]);
+    const r = await db.query(`UPDATE books SET title=$1,author=$2,isbn=$3,publisher=$4,publication_year=$5,description=$6,category_id=$7,quantity=$8,available_quantity=GREATEST(0, $8 - (quantity - available_quantity)),minimum_quantity=$9,active=$10,cover_image=$11 WHERE id=$12 RETURNING *`, [title.trim(),author.trim(),isbn?.trim()||null,publisher?.trim()||null,publication_year||null,description?.trim()||null,category_id,q,minimum_quantity ?? 2,active !== false,cover_image?.trim()||null,req.params.id]);
     if (!r.rows.length) return res.status(404).json({ error: 'Livro não encontrado.' });
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
