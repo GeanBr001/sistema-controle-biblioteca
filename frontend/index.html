@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Biblioteca — Controle de Acervo</title>
   <link rel="icon" href="assets/img/icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/library.css">
 </head>
 <body>
@@ -13,36 +16,36 @@
   <div id="app-shell" class="app-shell" style="display:none">
     <aside class="sidebar">
       <div class="brand">
-        <span class="brand-icon">▮▮</span>
+        <span class="brand-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5c0-1.1.9-2 2-2h6v18H6a2 2 0 0 1-2-2V5Z"/><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/></svg></span>
         <div><strong>Biblioteca</strong><small>Controle de Acervo</small></div>
       </div>
       <nav class="side-nav" aria-label="Navegação principal">
-        <button data-tab="dashboard" class="active"><span>▦</span>Dashboard</button>
-        <button data-tab="books"><span>▤</span>Livros</button>
-        <button data-tab="readers"><span>♙</span>Leitores</button>
-        <button data-tab="loans"><span>↗</span>Empréstimos</button>
-        <button data-tab="returns"><span>↩</span>Devoluções</button>
-        <button data-tab="movements"><span>⇄</span>Movimentações</button>
-        <button data-tab="categories"><span>◫</span>Categorias</button>
-        <button data-tab="reports"><span>▥</span>Relatórios</button>
-        <button data-tab="users" data-admin><span>♙</span>Usuários</button>
-        <button data-tab="settings" data-admin><span>⚙</span>Configurações</button>
+        <button data-tab="dashboard" class="active"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard</button>
+        <button data-tab="books"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5c0-1.1.9-2 2-2h6v18H6a2 2 0 0 1-2-2V5Z"/><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/></svg>Livros</button>
+        <button data-tab="readers"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/></svg>Leitores</button>
+        <button data-tab="loans"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg>Empréstimos</button>
+        <button data-tab="returns"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 7 7 17"/><path d="M16 17H7V8"/></svg>Devoluções</button>
+        <button data-tab="movements"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h4l4 10h9"/><path d="M3 17h4l1.7-4.3"/><path d="m17.5 4 3 3-3 3"/><path d="m17.5 20.5 3-3-3-3"/></svg>Movimentações</button>
+        <button data-tab="categories"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6c0-1.1.9-2 2-2h4l2 2h8c1.1 0 2 .9 2 2v9c0 1.1-.9 2-2 2H5a2 2 0 0 1-2-2V6Z"/></svg>Categorias</button>
+        <button data-tab="reports"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/></svg>Relatórios</button>
+        <button data-tab="users" data-admin><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.3 3.1-5 7-5s7 1.7 7 5"/><path d="M16 5.6c1.4.4 2.5 1.6 2.5 3s-1.1 2.6-2.5 3"/><path d="M19 14c2 .6 3.5 2 3.5 4"/></svg>Usuários</button>
+        <button data-tab="settings" data-admin><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>Configurações</button>
       </nav>
-      <button class="side-logout" onclick="App.logout()"><span>↪</span>Sair</button>
+      <button class="side-logout" onclick="App.logout()"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/></svg>Sair</button>
     </aside>
 
     <div class="workspace">
       <header class="topbar">
         <div class="topbar-title">
-          <button class="mobile-menu" aria-label="Abrir menu">☰</button>
+          <button class="mobile-menu" aria-label="Abrir menu"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
           <span id="page-kicker">Visão geral</span>
           <strong id="page-title">Dashboard</strong>
         </div>
         <div class="topbar-user">
-          <span class="avatar">♙</span>
+          <span class="avatar" id="avatar"></span>
           <span><b id="user-name"></b><small id="user-role"></small></span>
-          <button class="theme-toggle" onclick="App.toggleTheme()" aria-label="Alternar tema">◐</button>
-          <button class="user-chevron">⌄</button>
+          <button class="theme-toggle" onclick="App.toggleTheme()" aria-label="Alternar tema"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg></button>
+          <button class="user-chevron"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
         </div>
       </header>
 
@@ -50,7 +53,7 @@
         <section id="view-dashboard" class="view active">
           <div class="page-head">
             <div>
-              <span class="eyebrow">VISÃO GERAL</span>
+              <span class="eyebrow">Visão geral</span>
               <h1>Dashboard</h1>
               <p>Acompanhe o acervo, estoque e empréstimos da unidade.</p>
             </div>
@@ -83,14 +86,21 @@
         <section id="view-books" class="view">
           <div class="page-head">
             <div>
-              <span class="eyebrow">ACERVO</span>
+              <span class="eyebrow">Acervo</span>
               <h1>Livros</h1>
               <p>Cadastre títulos, controle exemplares e reative livros inativos.</p>
             </div>
             <button class="btn primary" onclick="App.openBookModal()">+ Novo livro</button>
           </div>
-          <div class="toolbar"><input id="book-search" placeholder="Buscar por título, autor ou categoria" oninput="App.renderBooks()"></div>
-          <div class="panel">
+          <div class="toolbar">
+            <input id="book-search" placeholder="Buscar por título, autor ou categoria" oninput="App.renderBooks()">
+            <div class="view-switch" role="group" aria-label="Formato de visualização">
+              <button id="books-view-grid" class="active" onclick="App.setBooksView('grid')" aria-label="Ver em grade"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></button>
+              <button id="books-view-table" onclick="App.setBooksView('table')" aria-label="Ver em lista"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+            </div>
+          </div>
+          <div id="books-grid" class="book-grid"></div>
+          <div id="books-panel" class="panel" style="display:none">
             <table>
               <thead><tr><th>Capa / livro</th><th>Categoria</th><th>Total</th><th>Disponíveis</th><th>Estoque</th><th>Status</th><th>Ações</th></tr></thead>
               <tbody id="books-table"></tbody>
@@ -101,7 +111,7 @@
         <section id="view-readers" class="view">
           <div class="page-head">
             <div>
-              <span class="eyebrow">ATENDIMENTO</span>
+              <span class="eyebrow">Atendimento</span>
               <h1>Leitores</h1>
               <p>Cadastre nome, e-mail, telefone e identificação para facilitar o contato.</p>
             </div>
@@ -119,7 +129,7 @@
         <section id="view-loans" class="view">
           <div class="page-head">
             <div>
-              <span class="eyebrow">CIRCULAÇÃO</span>
+              <span class="eyebrow">Circulação</span>
               <h1>Empréstimos</h1>
               <p>Consulte empréstimos ativos e os dados de contato do leitor.</p>
             </div>
@@ -136,7 +146,7 @@
         <section id="view-returns" class="view">
           <div class="page-head">
             <div>
-              <span class="eyebrow">CIRCULAÇÃO</span>
+              <span class="eyebrow">Circulação</span>
               <h1>Devoluções</h1>
               <p>Histórico separado dos livros já devolvidos.</p>
             </div>
@@ -152,7 +162,7 @@
         <section id="view-movements" class="view">
           <div class="page-head">
             <div>
-              <span class="eyebrow">HISTÓRICO</span>
+              <span class="eyebrow">Histórico</span>
               <h1>Movimentações</h1>
               <p>Entradas, saídas, empréstimos e devoluções registrados no acervo.</p>
             </div>
@@ -168,7 +178,7 @@
         <section id="view-categories" class="view">
           <div class="page-head">
             <div>
-              <span class="eyebrow">ORGANIZAÇÃO</span>
+              <span class="eyebrow">Organização</span>
               <h1>Categorias</h1>
               <p>Organize os livros por área.</p>
             </div>
@@ -185,7 +195,7 @@
         <section id="view-users" class="view">
           <div class="page-head">
             <div>
-              <span class="eyebrow">ACESSO</span>
+              <span class="eyebrow">Acesso</span>
               <h1>Usuários</h1>
               <p>Gerencie quem pode operar o sistema.</p>
             </div>
@@ -202,7 +212,7 @@
         <section id="view-reports" class="view">
           <div class="page-head">
             <div>
-              <span class="eyebrow">ANÁLISES</span>
+              <span class="eyebrow">Análises</span>
               <h1>Relatórios</h1>
               <p>Indicadores para acompanhar o acervo, a circulação e os atrasos.</p>
             </div>
@@ -230,7 +240,7 @@
         <section id="view-settings" class="view">
           <div class="page-head">
             <div>
-              <span class="eyebrow">SISTEMA</span>
+              <span class="eyebrow">Sistema</span>
               <h1>Configurações</h1>
               <p>Defina as regras padrão da unidade e a aparência do painel.</p>
             </div>
@@ -248,10 +258,6 @@
               </label>
               <div class="full form-actions"><button class="btn primary">Salvar configurações</button></div>
             </form>
-          </div>
-          <div class="panel info-panel">
-            <h2>Recursos administrativos</h2>
-            <p>Use esta área para definir regras padrão da biblioteca. O prazo será aplicado automaticamente a novos empréstimos e o estoque mínimo a novos livros.</p>
           </div>
         </section>
       </main>

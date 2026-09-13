@@ -12,6 +12,7 @@ const state = {
   movements: [],
   dashboard: {},
   tab: 'dashboard',
+  booksView: 'grid',
   pendingCatalog: null
 };
 
@@ -65,7 +66,12 @@ function coverSrc(value) {
 const ICONS = {
   edit: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Zm10-13 4 4M13 5l4 4"/></svg>',
   archive: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v13H4zM3 4h18v3H3zm5 7h8"/></svg>',
-  restore: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0 2 5M20 5v6h-6"/></svg>'
+  restore: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0 2 5M20 5v6h-6"/></svg>',
+  book: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5c0-1.1.9-2 2-2h6v18H6a2 2 0 0 1-2-2V5Z"/><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/></svg>',
+  check: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>',
+  loan: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg>',
+  warn: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 9v4"/><path d="M12 16.3h.01"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/></svg>'
 };
 const icon = name => ICONS[name] || '';
 
@@ -91,8 +97,8 @@ export const App = {
     $('app-shell').style.display = 'none';
     $('login-page').innerHTML = `
       <div class="login-card">
-        <div class="brand-mark">B</div>
-        <span class="eyebrow">SISTEMA DE BIBLIOTECA</span>
+        <div class="brand-mark">${icon('book')}</div>
+        <span class="eyebrow">Sistema de biblioteca</span>
         <h1>Controle de acervo</h1>
         <p>Acesse o painel administrativo para gerenciar livros, leitores e circulação.</p>
         <form id="login-form">
@@ -134,6 +140,7 @@ export const App = {
     $('app-shell').style.display = 'flex';
     $('user-name').textContent = state.user.name;
     $('user-role').textContent = ROLE_LABELS[state.user.role] || state.user.role;
+    if ($('avatar')) $('avatar').textContent = (state.user.name || '?').trim().charAt(0).toUpperCase();
     document.querySelectorAll('[data-admin]').forEach(x => {
       x.style.display = state.user.role === 'admin' ? '' : 'none';
     });
@@ -223,11 +230,11 @@ export const App = {
   renderDashboard() {
     const d = state.dashboard || {};
     $('dash-cards').innerHTML = [
-      ['Total de livros', d.total_books, '▮▮'],
-      ['Disponíveis', d.available_copies, '◔'],
-      ['Emprestados', d.active_loans, '↗'],
-      ['Estoque baixo', d.low_stock_books, '!']
-    ].map(([l, v, i]) => `<div class="stat"><span>${i}</span><div><small>${l}</small><strong>${v ?? 0}</strong></div></div>`).join('');
+      ['Total de livros', d.total_books, icon('book'), false],
+      ['Disponíveis', d.available_copies, icon('check'), false],
+      ['Emprestados', d.active_loans, icon('loan'), false],
+      ['Estoque baixo', d.low_stock_books, icon('warn'), Number(d.low_stock_books) > 0]
+    ].map(([l, v, i, alert]) => `<div class="stat${alert ? ' alert' : ''}"><span>${i}</span><div><small>${l}</small><strong>${v ?? 0}</strong></div></div>`).join('');
 
     const low = state.books.filter(b => b.active && Number(b.available_quantity) <= Number(b.minimum_quantity)).slice(0, 6);
     $('low-stock-table').innerHTML = low.map(b => `
@@ -244,9 +251,43 @@ export const App = {
     `).join('') || '<tr><td colspan="4">Nenhum empréstimo.</td></tr>';
   },
 
+  setBooksView(mode) {
+    state.booksView = mode;
+    $('books-grid').style.display = mode === 'grid' ? 'grid' : 'none';
+    $('books-panel').style.display = mode === 'table' ? 'block' : 'none';
+    $('books-view-grid')?.classList.toggle('active', mode === 'grid');
+    $('books-view-table')?.classList.toggle('active', mode === 'table');
+  },
+
   renderBooks() {
     const q = ($('book-search')?.value || '').toLowerCase();
     const rows = state.books.filter(b => `${b.title} ${b.author} ${b.category_name}`.toLowerCase().includes(q));
+
+    $('books-grid').innerHTML = rows.map(b => {
+      const cover = coverSrc(b.cover_image);
+      const coverCell = cover
+        ? `<img src="${esc(cover)}" alt="Capa de ${esc(b.title)}" loading="lazy">`
+        : icon('book');
+      const actionBtn = b.active
+        ? `<button class="icon-btn danger" title="Inativar livro" aria-label="Inativar livro" onclick="App.inactivateBook(${b.id})">${icon('archive')}</button>`
+        : `<button class="icon-btn restore" title="Reativar livro" aria-label="Reativar livro" onclick="App.reactivateBook(${b.id})">${icon('restore')}</button>`;
+      const stockPill = b.available_quantity <= b.minimum_quantity
+        ? '<span class="pill warn">Baixo</span>'
+        : `<span class="pill">${b.available_quantity}/${b.quantity}</span>`;
+      return `
+        <div class="book-card">
+          <div class="cover">${coverCell}</div>
+          <h3>${esc(b.title)}</h3>
+          <p class="author">${esc(b.author)}</p>
+          <div class="meta">${stockPill}
+            <div class="action-buttons">
+              <button class="icon-btn" title="Editar livro" aria-label="Editar livro" onclick="App.editBook(${b.id})">${icon('edit')}</button>
+              ${actionBtn}
+            </div>
+          </div>
+        </div>`;
+    }).join('') || '<p class="empty-state">Nenhum livro encontrado.</p>';
+
     $('books-table').innerHTML = rows.map(b => {
       const cover = coverSrc(b.cover_image);
       const coverCell = cover
@@ -278,6 +319,8 @@ export const App = {
           </td>
         </tr>`;
     }).join('') || '<tr><td colspan="7">Nenhum livro encontrado.</td></tr>';
+
+    this.setBooksView(state.booksView);
   },
 
   renderLoans() {
@@ -374,11 +417,11 @@ export const App = {
     const top = Object.entries(ranking).sort((a, b) => b[1] - a[1]).slice(0, 8);
 
     $('report-cards').innerHTML = [
-      ['Acervo ativo', state.books.filter(b => b.active).length],
-      ['Empréstimos totais', state.loans.length],
-      ['Em atraso', overdue.length],
-      ['Leitores cadastrados', state.readers.length]
-    ].map(([l, v]) => `<div class="stat"><span>▦</span><div><small>${l}</small><strong>${v}</strong></div></div>`).join('');
+      ['Acervo ativo', state.books.filter(b => b.active).length, false],
+      ['Empréstimos totais', state.loans.length, false],
+      ['Em atraso', overdue.length, overdue.length > 0],
+      ['Leitores cadastrados', state.readers.length, false]
+    ].map(([l, v, alert]) => `<div class="stat${alert ? ' alert' : ''}"><span>${icon('chart')}</span><div><small>${l}</small><strong>${v}</strong></div></div>`).join('');
 
     $('report-ranking').innerHTML = top.map(([name, total]) => `<tr><td>${esc(name)}</td><td>${total}</td></tr>`).join('')
       || '<tr><td colspan="2">Sem dados.</td></tr>';
@@ -424,7 +467,7 @@ export const App = {
           <img src="${esc(data.cover_image)}" alt="Capa encontrada">
           <div>
             <strong>${esc(data.title)}</strong>
-            <small>${esc(data.author)} · ${esc(data.publisher || 'Editora não informada')}</small>
+            <small>${esc(data.author)}, ${esc(data.publisher || 'editora não informada')}</small>
             <em>Fonte: ${esc(data.source)}</em>
           </div>
           <button type="button" class="btn small" onclick="App.applyCatalog()">Usar dados</button>
