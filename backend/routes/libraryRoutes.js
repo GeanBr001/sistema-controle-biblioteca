@@ -200,6 +200,9 @@ async function lookupGoogleBooks(isbn) {
   const payload = await response.json();
   const info = payload.items?.[0]?.volumeInfo;
   if (!info) return null;
+  // Se a fonte informa o idioma e não é português, não usar — melhor "não encontrado"
+  // do que preencher com dados de uma edição em outro idioma.
+  if (info.language && info.language !== "pt") return null;
   return {
     title: info.title || "",
     author: info.authors?.join(", ") || "",
@@ -230,6 +233,10 @@ async function lookupOpenLibrary(isbn) {
   const payload = await response.json();
   const doc = payload[`ISBN:${isbn}`];
   if (!doc) return null;
+  // Mesma lógica: o Open Library retorna dados por "obra" e às vezes isso traz
+  // o idioma original (inglês) mesmo para o ISBN de uma edição traduzida.
+  const languages = (doc.languages || []).map((l) => l.key || "");
+  if (languages.length && !languages.includes("/languages/por")) return null;
   return {
     title: doc.title || "",
     author: doc.authors?.map((a) => a.name).join(", ") || "",
