@@ -90,6 +90,11 @@ export const App = {
 
   toggleTheme() { toggleTheme(); },
 
+  toggleForgotPassword() {
+    const box = $('forgot-password-msg');
+    if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  },
+
   toggleMobileMenu() { document.querySelector('.sidebar')?.classList.toggle('open'); },
 
   showLogin() {
@@ -107,6 +112,12 @@ export const App = {
           <button class="btn primary" type="submit">Entrar</button>
           <div id="login-error" class="error"></div>
         </form>
+        <button class="forgot-link" type="button" onclick="App.toggleForgotPassword()">Esqueci minha senha</button>
+        <div id="forgot-password-msg" class="forgot-msg" style="display:none">
+          Por segurança, o sistema não envia e-mail de recuperação automático. Entre em contato com o
+          administrador em <a href="mailto:geanxiety@gmail.com?subject=Redefini%C3%A7%C3%A3o%20de%20senha%20-%20Sistema%20de%20Biblioteca">geanxiety@gmail.com</a>
+          para solicitar a redefinição da sua senha.
+        </div>
         <button class="theme-btn" type="button" onclick="App.toggleTheme()">Alternar tema</button>
       </div>`;
     $('login-form').addEventListener('submit', async e => {
@@ -206,7 +217,8 @@ export const App = {
       categories: ['Organização', 'Categorias'],
       users: ['Acesso', 'Usuários'],
       reports: ['Análises', 'Relatórios'],
-      settings: ['Sistema', 'Configurações']
+      settings: ['Sistema', 'Configurações'],
+      support: ['Ajuda', 'Suporte']
     };
     const label = labels[state.tab] || labels.dashboard;
     if ($('page-kicker')) $('page-kicker').textContent = label[0];
@@ -498,6 +510,7 @@ export const App = {
 
   openBookModal(id = null) {
     const b = id ? state.books.find(x => String(x.id) === String(id)) : {};
+    const currentCover = coverSrc(b.cover_image);
     this.openModal(id ? 'Editar livro' : 'Novo livro', `
       <form id="book-form" class="form-grid">
         ${this.field('Título', 'title', b.title || '', true)}
@@ -508,7 +521,19 @@ export const App = {
         </div>
         <div id="catalog-result" class="full"></div>
         ${this.field('Editora', 'publisher', b.publisher || '')}
-        ${this.field('Capa (URL ou caminho opcional)', 'cover_image', b.cover_image || '')}
+        <div class="full cover-field">
+          <label>Capa do livro</label>
+          <div class="cover-row">
+            <input name="cover_image" id="cover-url-input" placeholder="Cole a URL de uma imagem..." value="${esc(b.cover_image || '')}">
+            <span class="cover-or">ou</span>
+            <label class="btn cover-upload-btn">
+              Enviar arquivo
+              <input type="file" id="cover-file-input" accept="image/*" hidden>
+            </label>
+          </div>
+          <div id="cover-upload-status" class="cover-upload-status"></div>
+          <div id="cover-preview" class="cover-preview">${currentCover ? `<img src="${esc(currentCover)}" alt="Capa atual">` : ''}</div>
+        </div>
         ${this.field('Ano de publicação', 'publication_year', b.publication_year || '', false, 'number')}
         ${this.field('Quantidade', 'quantity', b.quantity ?? 0, true, 'number')}
         ${this.field('Mínimo no estoque', 'minimum_quantity', b.minimum_quantity ?? (settings().defaultMinimumStock || 2), false, 'number')}
@@ -523,6 +548,23 @@ export const App = {
           <button type="button" class="btn" onclick="App.closeModal()">Cancelar</button>
         </div>
       </form>`);
+    $('cover-file-input').addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const status = $('cover-upload-status');
+      const preview = $('cover-preview');
+      if (status) status.textContent = 'Enviando imagem...';
+      try {
+        const fd = new FormData();
+        fd.append('cover', file);
+        const r = await apiFetch('/books/upload-cover', { method: 'POST', body: fd });
+        $('cover-url-input').value = r.path;
+        if (preview) preview.innerHTML = `<img src="${esc(coverSrc(r.path))}" alt="Capa enviada">`;
+        if (status) status.textContent = 'Imagem enviada — revise e salve o livro.';
+      } catch (err) {
+        if (status) status.textContent = err.message;
+      }
+    });
     $('book-form').addEventListener('submit', async e => {
       e.preventDefault();
       const f = Object.fromEntries(new FormData(e.target));

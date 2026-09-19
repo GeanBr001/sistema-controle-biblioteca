@@ -1,7 +1,34 @@
 const express = require("express");
 const db = require("../db");
 const crypto = require("crypto");
+const path = require("path");
+const fs = require("fs");
+const multer = require("multer");
 const { hashPassword, verifyPassword } = require("../password");
+
+// --- Upload de capa (arquivo) -----------------------------------------
+// Salva em /uploads/covers com nome único; a URL/caminho continua sendo
+// uma opção alternativa (o bibliotecário escolhe uma das duas formas).
+
+const COVERS_DIR = path.join(__dirname, "..", "..", "uploads", "covers");
+if (!fs.existsSync(COVERS_DIR)) fs.mkdirSync(COVERS_DIR, { recursive: true });
+
+const coverUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, COVERS_DIR),
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname || "").toLowerCase() || ".jpg";
+      cb(null, `${Date.now()}-${crypto.randomBytes(4).toString("hex")}${ext}`);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!/^image\/(jpeg|png|webp|gif)$/.test(file.mimetype)) {
+      return cb(new Error("Envie apenas imagens (JPEG, PNG, WEBP ou GIF)."));
+    }
+    cb(null, true);
+  },
+});
 
 // --- Sessão -----------------------------------------------------------
 // Sessão assinada com HMAC guardada em cookie HttpOnly (sem tabela de sessões no banco).
@@ -378,6 +405,16 @@ router.get("/books", async (_req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// Recebe um arquivo de imagem (campo "cover") e devolve o caminho salvo,
+// que o frontend usa preenchendo o mesmo campo de URL/caminho do formulário.
+router.post("/books/upload-cover", (req, res) => {
+  coverUpload.single("cover")(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message || "Falha ao enviar a imagem." });
+    if (!req.file) return res.status(400).json({ error: "Nenhuma imagem enviada." });
+    res.status(201).json({ path: `uploads/covers/${req.file.filename}` });
+  });
 });
 
 router.post("/books", async (req, res) => {

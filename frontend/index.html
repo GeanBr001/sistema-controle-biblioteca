@@ -30,6 +30,7 @@
         <button data-tab="reports"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/></svg>Relatórios</button>
         <button data-tab="users" data-admin><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.3 3.1-5 7-5s7 1.7 7 5"/><path d="M16 5.6c1.4.4 2.5 1.6 2.5 3s-1.1 2.6-2.5 3"/><path d="M19 14c2 .6 3.5 2 3.5 4"/></svg>Usuários</button>
         <button data-tab="settings" data-admin><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>Configurações</button>
+        <button data-tab="support"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 1.8-2 3.5"/><path d="M12 17h.01"/></svg>Suporte</button>
       </nav>
       <button class="side-logout" onclick="App.logout()"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/></svg>Sair</button>
     </aside>
@@ -259,6 +260,46 @@
               <div class="full form-actions"><button class="btn primary">Salvar configurações</button></div>
             </form>
           </div>
+        </section>
+
+        <section id="view-support" class="view">
+          <div class="page-head">
+            <div>
+              <span class="eyebrow">Ajuda</span>
+              <h1>Suporte</h1>
+              <p>Dúvidas comuns sobre o uso do sistema.</p>
+            </div>
+          </div>
+          <div class="faq">
+            <details open>
+              <summary>Como faço um novo empréstimo?</summary>
+              <p>Vá em <strong>Empréstimos → Novo empréstimo</strong>, escolha o livro e o leitor (ou cadastre um leitor novo direto por ali) e defina a data de devolução prevista. O estoque disponível do livro é atualizado automaticamente.</p>
+            </details>
+            <details>
+              <summary>Como funciona a busca automática por ISBN?</summary>
+              <p>Ao cadastrar um livro, digite o ISBN e clique em <strong>Buscar dados do livro</strong>. O sistema consulta bases públicas (Google Books e Open Library) e preenche título, autor, editora e capa — sempre revise antes de salvar.</p>
+            </details>
+            <details>
+              <summary>Por que a busca por ISBN não encontrou meu livro?</summary>
+              <p>Livros de editoras pequenas, regionais ou institucionais (como materiais próprios de uma empresa) geralmente não estão catalogados nessas bases públicas gratuitas. Nesse caso, preencha os dados manualmente.</p>
+            </details>
+            <details>
+              <summary>Inativei um livro ou leitor sem querer, como reativo?</summary>
+              <p>Na tela de Livros ou Leitores, livros/leitores inativos aparecem com o status "Inativo". Use o botão de reativar ao lado do registro para voltar a disponibilizá-lo.</p>
+            </details>
+            <details>
+              <summary>Esqueci minha senha, o que eu faço?</summary>
+              <p>Por segurança, o sistema não envia e-mail de recuperação automático. Entre em contato com o administrador em <a href="mailto:geanxiety@gmail.com?subject=Redefini%C3%A7%C3%A3o%20de%20senha%20-%20Sistema%20de%20Biblioteca">geanxiety@gmail.com</a> para solicitar a redefinição.</p>
+            </details>
+            <details>
+              <summary>Quem pode cadastrar novos usuários do sistema?</summary>
+              <p>Somente administradores têm acesso à tela de Usuários. Bibliotecários podem operar o dia a dia (livros, leitores, empréstimos), mas não gerenciam contas de acesso.</p>
+            </details>
+          </div>
+          <p class="faq-contact">
+            Não encontrou o que precisava? Entre em contato com o administrador do sistema em
+            <a href="mailto:geanxiety@gmail.com?subject=D%C3%BAvida%20-%20Sistema%20de%20Biblioteca">geanxiety@gmail.com</a>.
+          </p>
         </section>
       </main>
     </div>
