@@ -553,6 +553,29 @@ router.put("/books/:id/reactivate", async (req, res) => {
   }
 });
 
+// Exclusão definitiva: só permitida se o livro nunca teve empréstimo ou
+// movimentação registrada. Se já tiver histórico, orienta a inativar em vez
+// de apagar (evita perder registro de operações antigas).
+router.delete("/books/:id/permanent", async (req, res) => {
+  try {
+    const usage = await db.query(
+      "SELECT (SELECT COUNT(*) FROM loans WHERE book_id=$1) AS loans, (SELECT COUNT(*) FROM stock_movements WHERE book_id=$1) AS movements",
+      [req.params.id],
+    );
+    const { loans, movements } = usage.rows[0];
+    if (Number(loans) > 0 || Number(movements) > 0) {
+      return res.status(409).json({
+        error: "Este livro já tem histórico de empréstimos ou movimentações e não pode ser excluído definitivamente. Use inativar.",
+      });
+    }
+    const r = await db.query("DELETE FROM books WHERE id=$1 RETURNING id", [req.params.id]);
+    if (!r.rows.length) return res.status(404).json({ error: "Livro não encontrado." });
+    res.json({ message: "Livro excluído definitivamente." });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // --- Empréstimos -----------------------------------------------------------
 
 router.get("/loans", async (_req, res) => {
@@ -620,6 +643,19 @@ router.post("/loans", async (req, res) => {
         });
       }
       reader = rr.rows[0];
+
+      // Regra de negócio: leitor com empréstimo em atraso não pode pegar outro livro
+      // até devolver o(s) pendente(s).
+      const overdue = await client.query(
+        "SELECT id FROM loans WHERE reader_id=$1 AND status='active' AND due_date < CURRENT_DATE LIMIT 1",
+        [reader_id],
+      );
+      if (overdue.rows.length) {
+        throw Object.assign(
+          new Error(`${reader.name} tem um empréstimo em atraso e não pode retirar outro livro até regularizar a devolução.`),
+          { status: 409 },
+        );
+      }
     }
 
     const finalName = reader?.name || borrower_name.trim();

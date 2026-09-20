@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Biblioteca — Controle de Acervo</title>
+  <title>Estante Virtual — Controle de Acervo</title>
   <link rel="icon" href="assets/img/icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,8 +16,8 @@
   <div id="app-shell" class="app-shell" style="display:none">
     <aside class="sidebar">
       <div class="brand">
-        <span class="brand-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5c0-1.1.9-2 2-2h6v18H6a2 2 0 0 1-2-2V5Z"/><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/></svg></span>
-        <div><strong>Biblioteca</strong><small>Controle de Acervo</small></div>
+        <span class="brand-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v14"/><path d="M10 21V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v16"/><path d="M15 21V9a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12"/></svg></span>
+        <div><strong>Estante Virtual</strong><small>Controle de Acervo</small></div>
       </div>
       <nav class="side-nav" aria-label="Navegação principal">
         <button data-tab="dashboard" class="active"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard</button>
@@ -46,7 +46,6 @@
           <span class="avatar" id="avatar"></span>
           <span><b id="user-name"></b><small id="user-role"></small></span>
           <button class="theme-toggle" onclick="App.toggleTheme()" aria-label="Alternar tema"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg></button>
-          <button class="user-chevron"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
         </div>
       </header>
 
@@ -260,6 +259,17 @@
               <div class="full form-actions"><button class="btn primary">Salvar configurações</button></div>
             </form>
           </div>
+
+          <div class="panel about-panel">
+            <div class="panel-head"><h2>Sobre o sistema</h2></div>
+            <div class="about-body">
+              <div class="about-item"><span>Sistema</span><strong>Estante Virtual</strong></div>
+              <div class="about-item"><span>Versão</span><strong>1.0 — TCC 2026</strong></div>
+              <div class="about-item"><span>Desenvolvido por</span><strong>Gean Ribeiro e Lucas Maciel</strong></div>
+              <div class="about-item"><span>Instituição</span><strong>SENAI — Técnico em Desenvolvimento de Sistemas, Ampére/PR</strong></div>
+              <div class="about-item"><span>Suporte</span><strong><a href="mailto:geanxiety@gmail.com?subject=Estante%20Virtual">geanxiety@gmail.com</a></strong></div>
+            </div>
+          </div>
         </section>
 
         <section id="view-support" class="view">
@@ -289,7 +299,7 @@
             </details>
             <details>
               <summary>Esqueci minha senha, o que eu faço?</summary>
-              <p>Por segurança, o sistema não envia e-mail de recuperação automático. Entre em contato com o administrador em <a href="mailto:geanxiety@gmail.com?subject=Redefini%C3%A7%C3%A3o%20de%20senha%20-%20Sistema%20de%20Biblioteca">geanxiety@gmail.com</a> para solicitar a redefinição.</p>
+              <p>Por segurança, o sistema não envia e-mail de recuperação automático. Entre em contato com o administrador em <a href="mailto:geanxiety@gmail.com?subject=Redefini%C3%A7%C3%A3o%20de%20senha%20-%20Estante%20Virtual">geanxiety@gmail.com</a> para solicitar a redefinição.</p>
             </details>
             <details>
               <summary>Quem pode cadastrar novos usuários do sistema?</summary>
@@ -298,7 +308,7 @@
           </div>
           <p class="faq-contact">
             Não encontrou o que precisava? Entre em contato com o administrador do sistema em
-            <a href="mailto:geanxiety@gmail.com?subject=D%C3%BAvida%20-%20Sistema%20de%20Biblioteca">geanxiety@gmail.com</a>.
+            <a href="mailto:geanxiety@gmail.com?subject=D%C3%BAvida%20-%20Estante%20Virtual">geanxiety@gmail.com</a>.
           </p>
         </section>
       </main>

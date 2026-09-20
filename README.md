@@ -1,10 +1,10 @@
-# Sistema de Controle de Biblioteca
+# Estante Virtual
 
 Aplicação web para controle de acervo, estoque, empréstimos, devoluções, categorias, usuários e movimentações de uma biblioteca.
 
 ## Objetivo do projeto
 
-O sistema foi desenvolvido para centralizar a operação de uma biblioteca e reduzir o controle manual de livros e empréstimos. O foco atual é uma biblioteca física ou escolar, com possibilidade de adaptação futura para outras unidades de acervo.
+O sistema Estante Virtual foi desenvolvido para centralizar a operação de uma biblioteca e reduzir o controle manual de livros e empréstimos. O foco atual é uma biblioteca física ou escolar, com possibilidade de adaptação futura para outras unidades de acervo.
 
 ## Tecnologias
 

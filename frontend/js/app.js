@@ -71,7 +71,8 @@ const ICONS = {
   check: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>',
   loan: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg>',
   warn: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 9v4"/><path d="M12 16.3h.01"/></svg>',
-  chart: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/></svg>'
+  chart: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/></svg>',
+  shelf: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v14"/><path d="M10 21V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v16"/><path d="M15 21V9a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12"/></svg>'
 };
 const icon = name => ICONS[name] || '';
 
@@ -102,20 +103,20 @@ export const App = {
     $('app-shell').style.display = 'none';
     $('login-page').innerHTML = `
       <div class="login-card">
-        <div class="brand-mark">${icon('book')}</div>
+        <div class="brand-mark">${icon('shelf')}</div>
         <span class="eyebrow">Sistema de biblioteca</span>
-        <h1>Controle de acervo</h1>
+        <h1>Estante Virtual</h1>
         <p>Acesse o painel administrativo para gerenciar livros, leitores e circulação.</p>
         <form id="login-form">
-          <label>E-mail<input name="email" type="email" required placeholder="admin@biblioteca.local"></label>
+          <label>E-mail<input name="email" type="email" required placeholder="admin@estantevirtual.local"></label>
           <label>Senha<input name="password" type="password" required placeholder="••••••••"></label>
-          <button class="btn primary" type="submit">Entrar</button>
+          <button class="btn primary login-submit" type="submit">Entrar</button>
           <div id="login-error" class="error"></div>
         </form>
         <button class="forgot-link" type="button" onclick="App.toggleForgotPassword()">Esqueci minha senha</button>
         <div id="forgot-password-msg" class="forgot-msg" style="display:none">
           Por segurança, o sistema não envia e-mail de recuperação automático. Entre em contato com o
-          administrador em <a href="mailto:geanxiety@gmail.com?subject=Redefini%C3%A7%C3%A3o%20de%20senha%20-%20Sistema%20de%20Biblioteca">geanxiety@gmail.com</a>
+          administrador em <a href="mailto:geanxiety@gmail.com?subject=Redefini%C3%A7%C3%A3o%20de%20senha%20-%20Estante%20Virtual">geanxiety@gmail.com</a>
           para solicitar a redefinição da sua senha.
         </div>
         <button class="theme-btn" type="button" onclick="App.toggleTheme()">Alternar tema</button>
@@ -274,6 +275,7 @@ export const App = {
   renderBooks() {
     const q = ($('book-search')?.value || '').toLowerCase();
     const rows = state.books.filter(b => `${b.title} ${b.author} ${b.category_name}`.toLowerCase().includes(q));
+    const deleteBtn = b => `<button class="icon-btn danger" title="Excluir definitivamente" aria-label="Excluir definitivamente" onclick="App.deleteBookPermanently(${b.id})">${icon('trash')}</button>`;
 
     $('books-grid').innerHTML = rows.map(b => {
       const cover = coverSrc(b.cover_image);
@@ -295,6 +297,7 @@ export const App = {
             <div class="action-buttons">
               <button class="icon-btn" title="Editar livro" aria-label="Editar livro" onclick="App.editBook(${b.id})">${icon('edit')}</button>
               ${actionBtn}
+              ${deleteBtn(b)}
             </div>
           </div>
         </div>`;
@@ -327,6 +330,7 @@ export const App = {
             <div class="action-buttons">
               <button class="icon-btn" title="Editar livro" aria-label="Editar livro" onclick="App.editBook(${b.id})">${icon('edit')}</button>
               ${actionBtn}
+              ${deleteBtn(b)}
             </div>
           </td>
         </tr>`;
@@ -335,21 +339,49 @@ export const App = {
     this.setBooksView(state.booksView);
   },
 
+  async deleteBookPermanently(id) {
+    if (!confirm('Excluir este livro definitivamente? Essa ação não pode ser desfeita (diferente de inativar).')) return;
+    try {
+      await apiFetch(`/books/${id}/permanent`, { method: 'DELETE' });
+      await this.refresh();
+    } catch (e) { alert(e.message); }
+  },
+
   renderLoans() {
     const active = state.loans.filter(l => l.status === 'active');
     const today = inputDate();
     $('loans-table').innerHTML = active.map(l => {
       const statusPill = l.due_date < today ? '<span class="pill warn">Atrasado</span>' : '<span class="pill green">Ativo</span>';
+      const name = esc(l.reader_name || l.borrower_name);
+      const readerCell = l.reader_id
+        ? `<button type="button" class="link-name" onclick="App.showReaderInfo(${l.id})" title="Ver dados de contato">${name}</button>`
+        : `<strong>${name}</strong>`;
       return `
         <tr>
           <td><strong>${esc(l.book_title)}</strong><small>${esc(l.book_author)}</small></td>
-          <td><strong>${esc(l.reader_name || l.borrower_name)}</strong><small>${esc(l.reader_email || '')} ${esc(l.reader_phone || '')}</small></td>
+          <td>${readerCell}<small>${esc(l.reader_email || '')} ${esc(l.reader_phone || '')}</small></td>
           <td>${localDate(l.loan_date || l.created_at)}</td>
           <td>${localDate(l.due_date)}</td>
           <td>${statusPill}</td>
           <td><button class="icon-btn" onclick="App.returnLoan(${l.id})">Registrar devolução</button></td>
         </tr>`;
     }).join('') || '<tr><td colspan="6">Nenhum empréstimo ativo.</td></tr>';
+  },
+
+  // Mostra e-mail/telefone do leitor pra facilitar contato (ex.: empréstimo atrasado).
+  showReaderInfo(loanId) {
+    const l = state.loans.find(x => String(x.id) === String(loanId));
+    if (!l) return;
+    const late = l.due_date < inputDate();
+    this.openModal('Contato do leitor', `
+      <div class="reader-info">
+        <h3>${esc(l.reader_name || l.borrower_name)}</h3>
+        ${l.reader_registration ? `<p><strong>Matrícula:</strong> ${esc(l.reader_registration)}</p>` : ''}
+        <p><strong>E-mail:</strong> ${l.reader_email ? `<a href="mailto:${esc(l.reader_email)}">${esc(l.reader_email)}</a>` : 'não informado'}</p>
+        <p><strong>Telefone:</strong> ${l.reader_phone ? `<a href="tel:${esc(l.reader_phone)}">${esc(l.reader_phone)}</a>` : 'não informado'}</p>
+        <p><strong>Livro:</strong> ${esc(l.book_title)} — devolução prevista para ${localDate(l.due_date)}${late ? ' <span class="pill warn">Atrasado</span>' : ''}</p>
+        <div class="form-actions"><button type="button" class="btn" onclick="App.closeModal()">Fechar</button></div>
+      </div>`);
   },
 
   renderReturns() {
@@ -359,7 +391,7 @@ export const App = {
         <td><strong>${esc(l.book_title)}</strong><small>${esc(l.book_author)}</small></td>
         <td>${esc(l.reader_name || l.borrower_name)}<small>${esc(l.reader_email || '')} ${esc(l.reader_phone || '')}</small></td>
         <td>${localDate(l.loan_date || l.created_at)}</td>
-        <td>${localDate(l.return_date || l.returned_at, true)}</td>
+        <td>${localDate(l.returned_at || l.return_date, true)}</td>
         <td><span class="pill green">Devolvido</span></td>
       </tr>
     `).join('') || '<tr><td colspan="5">Nenhuma devolução registrada.</td></tr>';
@@ -602,6 +634,10 @@ export const App = {
     const s = settings();
     const due = new Date();
     due.setDate(due.getDate() + Number(s.defaultDueDays || 7));
+    const today = inputDate();
+    const overdueReaderIds = new Set(
+      state.loans.filter(l => l.status === 'active' && l.due_date < today && l.reader_id).map(l => l.reader_id)
+    );
     this.openModal('Novo empréstimo', `
       <form id="loan-form" class="form-grid">
         <label>Livro *
@@ -612,7 +648,10 @@ export const App = {
         <label>Leitor *
           <select name="reader_id" required>
             <option value="">Selecione um leitor</option>
-            ${state.readers.filter(r => r.active).map(r => `<option value="${r.id}">${esc(r.name)} — ${esc(r.email || r.phone || '')}</option>`).join('')}
+            ${state.readers.filter(r => r.active).map(r => {
+              const overdue = overdueReaderIds.has(r.id);
+              return `<option value="${r.id}" ${overdue ? 'disabled' : ''}>${esc(r.name)} — ${esc(r.email || r.phone || '')}${overdue ? ' (em atraso — não pode emprestar)' : ''}</option>`;
+            }).join('')}
           </select>
         </label>
         <button type="button" class="text-btn full" onclick="App.openReaderModal(true)">+ Cadastrar novo leitor</button>
