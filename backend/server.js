@@ -30,7 +30,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use(express.static(path.join(__dirname, '../frontend')));
 app.use('/api', libraryRoutes);
 
-app.get('/', (_req, res) => res.sendFile(path.join(__dirname, '../frontend/index.html')));
+app.get('/', (_req, res) => res.sendFile(path.join(__dirname, '../frontend/home.html')));
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'biblioteca-api' }));
 
 app.listen(PORT, async () => {

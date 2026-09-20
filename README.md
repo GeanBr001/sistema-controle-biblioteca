@@ -55,8 +55,10 @@ Acesse `http://localhost:3000`.
 
 ## Observação de segurança
 
-Antes de usar o sistema com dados reais, é necessário implementar sessão autenticada no backend, autorização por função, restrição de CORS e armazenamento persistente das capas. A versão atual é uma base de demonstração do TCC e não deve ser publicada com a senha de administrador de exemplo.
+O backend já implementa sessão assinada (HMAC) em cookie HttpOnly, autorização por perfil (admin/bibliotecário) e CORS configurado. Antes de usar com dados reais de uma instituição, troque a senha de administrador de exemplo e defina `SESSION_SECRET` com um valor próprio em produção — o sistema usa um valor padrão apenas para desenvolvimento local.
+
+**Sobre as capas enviadas por upload:** no plano gratuito do Render, o disco é temporário — arquivos salvos em `uploads/covers/` (incluindo capas enviadas por upload de arquivo) são apagados a cada novo deploy ou reinício do serviço. Capas cadastradas por URL não são afetadas, pois não dependem de arquivo salvo no servidor. Para manter capas enviadas por upload de forma permanente em produção, seria necessário um serviço de armazenamento externo (ex.: Supabase Storage, Cloudinary).
 
 ## Banco de dados
 
-O backend utiliza as tabelas `users`, `categories`, `books`, `loans` e `stock_movements`, além da view `dashboard_summary`. O arquivo SQL legado do antigo projeto de comércio eletrônico foi removido da árvore atual e permanece somente no backup gerado durante a limpeza.
+O backend utiliza as tabelas `users`, `categories`, `books`, `readers`, `loans` e `stock_movements`, além da view `dashboard_summary`. Para montar o banco do zero, execute `database/schema-completo.sql` no SQL Editor do Supabase — veja `database/README.md` para mais detalhes.
