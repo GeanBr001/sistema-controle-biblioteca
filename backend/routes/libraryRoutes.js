@@ -769,12 +769,24 @@ router.get("/users", requireAdmin, async (_req, res) => {
   }
 });
 
+// Política mínima de senha exigida pelo TCC: 8+ caracteres, pelo menos uma
+// letra maiúscula e um número.
+const PASSWORD_POLICY = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+function isValidPassword(pw) {
+  return typeof pw === "string" && PASSWORD_POLICY.test(pw);
+}
+
 router.post("/users", requireAdmin, async (req, res) => {
   const { name, email, password, role } = req.body;
   if (!name?.trim() || !email?.trim() || !password) {
     return res
       .status(400)
       .json({ error: "Nome, e-mail e senha são obrigatórios." });
+  }
+  if (!isValidPassword(password)) {
+    return res.status(400).json({
+      error: "A senha precisa ter no mínimo 8 caracteres, com pelo menos uma letra maiúscula e um número.",
+    });
   }
   try {
     const hash = await hashPassword(password);
@@ -797,6 +809,11 @@ router.post("/users", requireAdmin, async (req, res) => {
 
 router.put("/users/:id", requireAdmin, async (req, res) => {
   const { name, email, role, active, password } = req.body;
+  if (password && !isValidPassword(password)) {
+    return res.status(400).json({
+      error: "A senha precisa ter no mínimo 8 caracteres, com pelo menos uma letra maiúscula e um número.",
+    });
+  }
   try {
     let r;
     if (password) {

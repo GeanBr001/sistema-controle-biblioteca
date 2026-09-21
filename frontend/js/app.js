@@ -759,7 +759,8 @@ export const App = {
       <form id="user-form" class="form-grid">
         ${this.field('Nome', 'name', u.name || '', true)}
         ${this.field('E-mail', 'email', u.email || '', true, 'email')}
-        ${this.field('Senha', 'password', '', !id, 'password')}
+        <label class="full">Senha${id ? '' : ' *'}<input name="password" type="password" ${id ? '' : 'required'} minlength="8" pattern="(?=.*[A-Z])(?=.*\\d).{8,}" title="Mínimo 8 caracteres, com ao menos uma letra maiúscula e um número"></label>
+        <small class="full" style="color:var(--muted);font-size:11px;margin-top:-8px">${id ? 'Deixe em branco para manter a senha atual. ' : ''}Mínimo 8 caracteres, com ao menos uma letra maiúscula e um número.</small>
         <label>Função
           <select name="role">
             <option value="staff" ${u.role === 'staff' ? 'selected' : ''}>Bibliotecário</option>
