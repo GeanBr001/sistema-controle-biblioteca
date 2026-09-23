@@ -919,11 +919,28 @@ router.delete("/users/:id/permanent", requireAdmin, async (req, res) => {
       }
     }
 
-    // stock_movements.user_id usa ON DELETE SET NULL, então o histórico
-    // permanece mesmo após a exclusão da conta.
+    // Checagem preventiva: stock_movements não tem script de criação versionado,
+    // então não dá pra garantir que a FK está como ON DELETE SET NULL no banco
+    // de produção. Melhor barrar aqui com mensagem clara do que deixar estourar
+    // um erro cru de violação de chave estrangeira.
+    const movements = await db.query(
+      "SELECT COUNT(*)::int AS total FROM stock_movements WHERE user_id=$1",
+      [req.params.id],
+    );
+    if (movements.rows[0].total > 0) {
+      return res.status(409).json({
+        error: "Este usuário já tem movimentações registradas no histórico e não pode ser excluído definitivamente. Use inativar.",
+      });
+    }
+
     await db.query("DELETE FROM users WHERE id=$1", [req.params.id]);
     res.json({ message: "Usuário excluído definitivamente." });
   } catch (e) {
+    if (e.code === "23503") {
+      return res.status(409).json({
+        error: "Este usuário está vinculado a registros existentes e não pode ser excluído definitivamente. Use inativar.",
+      });
+    }
     res.status(500).json({ error: e.message });
   }
 });
