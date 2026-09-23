@@ -67,6 +67,7 @@ const ICONS = {
   edit: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Zm10-13 4 4M13 5l4 4"/></svg>',
   archive: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v13H4zM3 4h18v3H3zm5 7h8"/></svg>',
   restore: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0 2 5M20 5v6h-6"/></svg>',
+  trash: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
   book: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5c0-1.1.9-2 2-2h6v18H6a2 2 0 0 1-2-2V5Z"/><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/></svg>',
   check: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>',
   loan: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg>',
@@ -274,7 +275,40 @@ export const App = {
 
   renderBooks() {
     const q = ($('book-search')?.value || '').toLowerCase();
-    const rows = state.books.filter(b => `${b.title} ${b.author} ${b.category_name}`.toLowerCase().includes(q));
+    const filter = $('book-filter')?.value || 'all';
+    const sort = $('book-sort')?.value || 'title-asc';
+    const today = inputDate();
+    const overdueBookIds = new Set((state.loans || [])
+      .filter(l => l.status === 'active' && l.due_date < today)
+      .map(l => String(l.book_id)));
+
+    let rows = state.books.filter(b => `${b.title} ${b.author} ${b.category_name}`.toLowerCase().includes(q));
+
+    rows = rows.filter(b => {
+      const total = Number(b.quantity) || 0;
+      const available = Number(b.available_quantity) || 0;
+      if (filter === 'active') return b.active;
+      if (filter === 'inactive') return !b.active;
+      if (filter === 'low-stock') return b.active && available <= Number(b.minimum_quantity || 0);
+      if (filter === 'out-of-stock') return b.active && available <= 0;
+      if (filter === 'overdue') return overdueBookIds.has(String(b.id));
+      return true;
+    });
+
+    rows.sort((a, b) => {
+      const titleA = String(a.title || '').toLowerCase();
+      const titleB = String(b.title || '').toLowerCase();
+      const totalA = Number(a.quantity) || 0;
+      const totalB = Number(b.quantity) || 0;
+      const availableA = Number(a.available_quantity) || 0;
+      const availableB = Number(b.available_quantity) || 0;
+      if (sort === 'title-desc') return titleB.localeCompare(titleA, 'pt-BR');
+      if (sort === 'quantity-desc') return totalB - totalA;
+      if (sort === 'quantity-asc') return totalA - totalB;
+      if (sort === 'available-desc') return availableB - availableA;
+      if (sort === 'available-asc') return availableA - availableB;
+      return titleA.localeCompare(titleB, 'pt-BR');
+    });
     const deleteBtn = b => `<button class="icon-btn danger" title="Excluir definitivamente" aria-label="Excluir definitivamente" onclick="App.deleteBookPermanently(${b.id})">${icon('trash')}</button>`;
 
     $('books-grid').innerHTML = rows.map(b => {
@@ -283,7 +317,7 @@ export const App = {
         ? `<img src="${esc(cover)}" alt="Capa de ${esc(b.title)}" loading="lazy">`
         : icon('book');
       const actionBtn = b.active
-        ? `<button class="icon-btn danger" title="Inativar livro" aria-label="Inativar livro" onclick="App.inactivateBook(${b.id})">${icon('archive')}</button>`
+        ? `<button class="icon-btn warning" title="Inativar livro" aria-label="Inativar livro" onclick="App.inactivateBook(${b.id})">${icon('archive')}</button>`
         : `<button class="icon-btn restore" title="Reativar livro" aria-label="Reativar livro" onclick="App.reactivateBook(${b.id})">${icon('restore')}</button>`;
       const stockPill = b.available_quantity <= b.minimum_quantity
         ? '<span class="pill warn">Baixo</span>'
@@ -313,7 +347,7 @@ export const App = {
         : '<span class="pill green">Normal</span>';
       const statusPill = b.active ? '<span class="pill green">Ativo</span>' : '<span class="pill">Inativo</span>';
       const actionBtn = b.active
-        ? `<button class="icon-btn danger" title="Inativar livro" aria-label="Inativar livro" onclick="App.inactivateBook(${b.id})">${icon('archive')}</button>`
+        ? `<button class="icon-btn warning" title="Inativar livro" aria-label="Inativar livro" onclick="App.inactivateBook(${b.id})">${icon('archive')}</button>`
         : `<button class="icon-btn restore" title="Reativar livro" aria-label="Reativar livro" onclick="App.reactivateBook(${b.id})">${icon('restore')}</button>`;
       return `
         <tr>
@@ -348,8 +382,34 @@ export const App = {
   },
 
   renderLoans() {
-    const active = state.loans.filter(l => l.status === 'active');
+    const q = ($('loan-search')?.value || '').toLowerCase().trim();
+    const filter = $('loan-filter')?.value || 'all';
+    const sort = $('loan-sort')?.value || 'due-asc';
+    const from = $('loan-from')?.value || '';
+    const to = $('loan-to')?.value || '';
     const today = inputDate();
+
+    let active = state.loans.filter(l => l.status === 'active');
+    active = active.filter(l => {
+      const haystack = `${l.book_title || ''} ${l.book_author || ''} ${l.reader_name || ''} ${l.borrower_name || ''} ${l.reader_registration || l.borrower_registration || ''}`.toLowerCase();
+      if (q && !haystack.includes(q)) return false;
+      const overdue = String(l.due_date || '') < today;
+      if (filter === 'overdue' && !overdue) return false;
+      if (filter === 'on-time' && overdue) return false;
+      const loanDate = inputDate(l.loan_date || l.created_at);
+      if (from && loanDate < from) return false;
+      if (to && loanDate > to) return false;
+      return true;
+    });
+
+    active.sort((a, b) => {
+      if (sort === 'due-desc') return String(b.due_date || '').localeCompare(String(a.due_date || ''));
+      if (sort === 'loan-desc') return String(b.loan_date || b.created_at || '').localeCompare(String(a.loan_date || a.created_at || ''));
+      if (sort === 'loan-asc') return String(a.loan_date || a.created_at || '').localeCompare(String(b.loan_date || b.created_at || ''));
+      if (sort === 'reader-asc') return String(a.reader_name || a.borrower_name || '').localeCompare(String(b.reader_name || b.borrower_name || ''), 'pt-BR');
+      return String(a.due_date || '').localeCompare(String(b.due_date || ''));
+    });
+
     $('loans-table').innerHTML = active.map(l => {
       const statusPill = l.due_date < today ? '<span class="pill warn">Atrasado</span>' : '<span class="pill green">Ativo</span>';
       const name = esc(l.reader_name || l.borrower_name);
@@ -359,13 +419,20 @@ export const App = {
       return `
         <tr>
           <td><strong>${esc(l.book_title)}</strong><small>${esc(l.book_author)}</small></td>
-          <td>${readerCell}<small>${esc(l.reader_email || '')} ${esc(l.reader_phone || '')}</small></td>
+          <td>${readerCell}<small>${esc(l.reader_registration || l.borrower_registration || '')} ${esc(l.reader_email || '')} ${esc(l.reader_phone || '')}</small></td>
           <td>${localDate(l.loan_date || l.created_at)}</td>
           <td>${localDate(l.due_date)}</td>
           <td>${statusPill}</td>
           <td><button class="icon-btn" onclick="App.returnLoan(${l.id})">Registrar devolução</button></td>
         </tr>`;
-    }).join('') || '<tr><td colspan="6">Nenhum empréstimo ativo.</td></tr>';
+    }).join('') || '<tr><td colspan="6">Nenhum empréstimo encontrado com esses filtros.</td></tr>';
+  },
+
+  clearLoanFilters() {
+    ['loan-search', 'loan-from', 'loan-to'].forEach(id => { if ($(id)) $(id).value = ''; });
+    if ($('loan-filter')) $('loan-filter').value = 'all';
+    if ($('loan-sort')) $('loan-sort').value = 'due-asc';
+    this.renderLoans();
   },
 
   // Mostra e-mail/telefone do leitor pra facilitar contato (ex.: empréstimo atrasado).
@@ -385,24 +452,81 @@ export const App = {
   },
 
   renderReturns() {
-    const returned = state.loans.filter(l => l.status === 'returned');
+    const q = ($('return-search')?.value || '').toLowerCase().trim();
+    const from = $('return-from')?.value || '';
+    const to = $('return-to')?.value || '';
+    const sort = $('return-sort')?.value || 'return-desc';
+
+    let returned = state.loans.filter(l => l.status === 'returned');
+    returned = returned.filter(l => {
+      const haystack = `${l.book_title || ''} ${l.book_author || ''} ${l.reader_name || ''} ${l.borrower_name || ''} ${l.reader_registration || l.borrower_registration || ''}`.toLowerCase();
+      if (q && !haystack.includes(q)) return false;
+      const returnDate = inputDate(l.returned_at || l.return_date);
+      if (from && returnDate < from) return false;
+      if (to && returnDate > to) return false;
+      return true;
+    });
+
+    returned.sort((a, b) => {
+      if (sort === 'return-asc') return String(a.returned_at || a.return_date || '').localeCompare(String(b.returned_at || b.return_date || ''));
+      if (sort === 'reader-asc') return String(a.reader_name || a.borrower_name || '').localeCompare(String(b.reader_name || b.borrower_name || ''), 'pt-BR');
+      if (sort === 'book-asc') return String(a.book_title || '').localeCompare(String(b.book_title || ''), 'pt-BR');
+      return String(b.returned_at || b.return_date || '').localeCompare(String(a.returned_at || a.return_date || ''));
+    });
+
     $('returns-table').innerHTML = returned.map(l => `
       <tr>
         <td><strong>${esc(l.book_title)}</strong><small>${esc(l.book_author)}</small></td>
-        <td>${esc(l.reader_name || l.borrower_name)}<small>${esc(l.reader_email || '')} ${esc(l.reader_phone || '')}</small></td>
+        <td>${esc(l.reader_name || l.borrower_name)}<small>${esc(l.reader_registration || l.borrower_registration || '')} ${esc(l.reader_email || '')} ${esc(l.reader_phone || '')}</small></td>
         <td>${localDate(l.loan_date || l.created_at)}</td>
         <td>${localDate(l.returned_at || l.return_date, true)}</td>
         <td><span class="pill green">Devolvido</span></td>
       </tr>
-    `).join('') || '<tr><td colspan="5">Nenhuma devolução registrada.</td></tr>';
+    `).join('') || '<tr><td colspan="5">Nenhuma devolução encontrada com esses filtros.</td></tr>';
+  },
+
+  clearReturnFilters() {
+    ['return-search', 'return-from', 'return-to'].forEach(id => { if ($(id)) $(id).value = ''; });
+    if ($('return-sort')) $('return-sort').value = 'return-desc';
+    this.renderReturns();
   },
 
   renderReaders() {
     const q = ($('reader-search')?.value || '').toLowerCase();
-    const rows = (state.readers || []).filter(r => `${r.name} ${r.email || ''} ${r.phone || ''} ${r.registration || ''}`.toLowerCase().includes(q));
+    const filter = $('reader-filter')?.value || 'all';
+    const sort = $('reader-sort')?.value || 'name-asc';
+    const today = inputDate();
+    const activeLoans = state.loans || [];
+    const overdueReaderIds = new Set(activeLoans
+      .filter(l => l.status === 'active' && l.due_date < today && l.reader_id != null)
+      .map(l => String(l.reader_id)));
+
+    let rows = (state.readers || []).filter(r => `${r.name} ${r.email || ''} ${r.phone || ''} ${r.registration || ''}`.toLowerCase().includes(q));
+
+    rows = rows.filter(r => {
+      const loans = Number(r.active_loans) || 0;
+      if (filter === 'active') return r.active;
+      if (filter === 'inactive') return !r.active;
+      if (filter === 'overdue') return overdueReaderIds.has(String(r.id));
+      if (filter === 'with-loans') return loans > 0;
+      if (filter === 'no-loans') return loans === 0;
+      return true;
+    });
+
+    rows.sort((a, b) => {
+      const nameA = String(a.name || '').toLowerCase();
+      const nameB = String(b.name || '').toLowerCase();
+      const loansA = Number(a.active_loans) || 0;
+      const loansB = Number(b.active_loans) || 0;
+      if (sort === 'name-desc') return nameB.localeCompare(nameA, 'pt-BR');
+      if (sort === 'loans-desc') return loansB - loansA;
+      if (sort === 'loans-asc') return loansA - loansB;
+      return nameA.localeCompare(nameB, 'pt-BR');
+    });
     $('readers-table').innerHTML = rows.map(r => {
       const statusPill = r.active ? '<span class="pill green">Ativo</span>' : '<span class="pill">Inativo</span>';
-      const inactivateBtn = r.active ? `<button class="icon-btn danger" onclick="App.inactivateReader(${r.id})">Inativar</button>` : '';
+      const inactivateBtn = r.active ? `<button class="icon-btn warning" onclick="App.inactivateReader(${r.id})">Inativar</button>` : '';
+      const deleteBtn = `<button class="icon-btn danger" onclick="App.deleteReaderPermanently(${r.id})">Excluir</button>`;
       return `
         <tr>
           <td><strong>${esc(r.name)}</strong><small>${esc(r.registration || 'Sem matrícula')}</small></td>
@@ -410,7 +534,7 @@ export const App = {
           <td>${esc(r.phone || '—')}</td>
           <td>${r.active_loans || 0}</td>
           <td>${statusPill}</td>
-          <td><button class="icon-btn" onclick="App.editReader(${r.id})">Editar</button>${inactivateBtn}</td>
+          <td><button class="icon-btn" onclick="App.editReader(${r.id})">Editar</button>${inactivateBtn}${deleteBtn}</td>
         </tr>`;
     }).join('') || '<tr><td colspan="6">Nenhum leitor cadastrado.</td></tr>';
   },
@@ -448,7 +572,10 @@ export const App = {
         <td><strong>${esc(u.name)}</strong><small>${esc(u.email)}</small></td>
         <td>${ROLE_LABELS[u.role] || u.role}</td>
         <td>${u.active ? '<span class="pill green">Ativo</span>' : '<span class="pill">Inativo</span>'}</td>
-        <td><button class="icon-btn" onclick="App.editUser(${u.id})">Editar</button></td>
+        <td>
+          <button class="icon-btn" onclick="App.editUser(${u.id})">Editar</button>
+          <button class="icon-btn danger" onclick="App.deleteUserPermanently(${u.id})">Excluir</button>
+        </td>
       </tr>
     `).join('');
   },
@@ -718,9 +845,18 @@ export const App = {
   editReader(id) { this.openReaderModal(false, id); },
 
   async inactivateReader(id) {
-    if (!confirm('Inativar este leitor?')) return;
+    if (!confirm('Inativar este leitor? Ele continuará no histórico, mas não poderá receber novos empréstimos.')) return;
     try { await apiFetch(`/readers/${id}`, { method: 'DELETE' }); await this.refresh(); }
     catch (e) { alert(e.message); }
+  },
+
+  async deleteReaderPermanently(id) {
+    const r = state.readers.find(x => String(x.id) === String(id));
+    if (!confirm(`Excluir definitivamente o leitor "${r?.name || ''}"? Essa ação não pode ser desfeita.`)) return;
+    try {
+      await apiFetch(`/readers/${id}/permanent`, { method: 'DELETE' });
+      await this.refresh();
+    } catch (e) { alert(e.message); }
   },
 
   openCategoryModal(id = null) {
@@ -792,6 +928,15 @@ export const App = {
   },
 
   editUser(id) { this.openUserModal(id); },
+
+  async deleteUserPermanently(id) {
+    const u = state.users.find(x => String(x.id) === String(id));
+    if (!confirm(`Excluir definitivamente o usuário "${u?.name || ''}"? Essa ação não pode ser desfeita.`)) return;
+    try {
+      await apiFetch(`/users/${id}/permanent`, { method: 'DELETE' });
+      await this.refresh();
+    } catch (e) { alert(e.message); }
+  },
 
   saveSettings() {
     const f = new FormData($('settings-form'));

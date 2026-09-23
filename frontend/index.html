@@ -94,6 +94,22 @@
           </div>
           <div class="toolbar">
             <input id="book-search" placeholder="Buscar por título, autor ou categoria" oninput="App.renderBooks()">
+            <select id="book-filter" onchange="App.renderBooks()" aria-label="Filtrar livros">
+              <option value="all">Todos os livros</option>
+              <option value="active">Somente ativos</option>
+              <option value="inactive">Somente inativos</option>
+              <option value="low-stock">Estoque baixo</option>
+              <option value="out-of-stock">Sem exemplares disponíveis</option>
+              <option value="overdue">Com empréstimos atrasados</option>
+            </select>
+            <select id="book-sort" onchange="App.renderBooks()" aria-label="Ordenar livros">
+              <option value="title-asc">Título: A-Z</option>
+              <option value="title-desc">Título: Z-A</option>
+              <option value="quantity-desc">Total: maior para menor</option>
+              <option value="quantity-asc">Total: menor para maior</option>
+              <option value="available-desc">Disponíveis: maior para menor</option>
+              <option value="available-asc">Disponíveis: menor para maior</option>
+            </select>
             <div class="view-switch" role="group" aria-label="Formato de visualização">
               <button id="books-view-grid" class="active" onclick="App.setBooksView('grid')" aria-label="Ver em grade"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></button>
               <button id="books-view-table" onclick="App.setBooksView('table')" aria-label="Ver em lista"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
@@ -117,7 +133,23 @@
             </div>
             <button class="btn primary" onclick="App.openReaderModal()">+ Novo leitor</button>
           </div>
-          <div class="toolbar"><input id="reader-search" placeholder="Buscar por nome, e-mail ou telefone" oninput="App.renderReaders()"></div>
+          <div class="toolbar">
+            <input id="reader-search" placeholder="Buscar por nome, e-mail ou telefone" oninput="App.renderReaders()">
+            <select id="reader-filter" onchange="App.renderReaders()" aria-label="Filtrar leitores">
+              <option value="all">Todos os leitores</option>
+              <option value="active">Somente ativos</option>
+              <option value="inactive">Somente inativos</option>
+              <option value="overdue">Com empréstimo atrasado</option>
+              <option value="with-loans">Com empréstimos ativos</option>
+              <option value="no-loans">Sem empréstimos ativos</option>
+            </select>
+            <select id="reader-sort" onchange="App.renderReaders()" aria-label="Ordenar leitores">
+              <option value="name-asc">Nome: A-Z</option>
+              <option value="name-desc">Nome: Z-A</option>
+              <option value="loans-desc">Empréstimos: maior para menor</option>
+              <option value="loans-asc">Empréstimos: menor para maior</option>
+            </select>
+          </div>
           <div class="panel">
             <table>
               <thead><tr><th>Leitor</th><th>E-mail</th><th>Telefone</th><th>Empréstimos ativos</th><th>Status</th><th>Ações</th></tr></thead>
@@ -135,6 +167,24 @@
             </div>
             <button class="btn primary" onclick="App.openLoanModal()">+ Novo empréstimo</button>
           </div>
+          <div class="toolbar loan-toolbar">
+            <input id="loan-search" type="search" placeholder="Pesquisar por livro, leitor ou matrícula...">
+            <select id="loan-filter">
+              <option value="all">Todos os empréstimos</option>
+              <option value="overdue">Atrasados</option>
+              <option value="on-time">No prazo</option>
+            </select>
+            <input id="loan-from" type="date" title="Empréstimos a partir desta data">
+            <input id="loan-to" type="date" title="Empréstimos até esta data">
+            <select id="loan-sort">
+              <option value="due-asc">Devolução mais próxima</option>
+              <option value="due-desc">Devolução mais distante</option>
+              <option value="loan-desc">Mais recentes</option>
+              <option value="loan-asc">Mais antigos</option>
+              <option value="reader-asc">Leitor A-Z</option>
+            </select>
+            <button class="btn" type="button" onclick="App.clearLoanFilters()">Limpar filtros</button>
+          </div>
           <div class="panel">
             <table>
               <thead><tr><th>Livro</th><th>Leitor / contato</th><th>Empréstimo</th><th>Devolução prevista</th><th>Status</th><th>Ação</th></tr></thead>
@@ -150,6 +200,18 @@
               <h1>Devoluções</h1>
               <p>Histórico separado dos livros já devolvidos.</p>
             </div>
+          </div>
+          <div class="toolbar return-toolbar">
+            <input id="return-search" type="search" placeholder="Pesquisar por livro, leitor ou matrícula...">
+            <input id="return-from" type="date" title="Devoluções a partir desta data">
+            <input id="return-to" type="date" title="Devoluções até esta data">
+            <select id="return-sort">
+              <option value="return-desc">Mais recentes</option>
+              <option value="return-asc">Mais antigas</option>
+              <option value="reader-asc">Leitor A-Z</option>
+              <option value="book-asc">Livro A-Z</option>
+            </select>
+            <button class="btn" type="button" onclick="App.clearReturnFilters()">Limpar filtros</button>
           </div>
           <div class="panel">
             <table>

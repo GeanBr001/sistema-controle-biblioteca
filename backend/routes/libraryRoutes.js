@@ -394,6 +394,32 @@ router.delete("/readers/:id", async (req, res) => {
   }
 });
 
+// Exclusão definitiva. O histórico de empréstimos é preservado com
+// borrower_name/borrower_registration; apenas a referência ao leitor é anulada.
+router.delete("/readers/:id/permanent", async (req, res) => {
+  try {
+    const activeLoans = await db.query(
+      "SELECT COUNT(*)::int AS total FROM loans WHERE reader_id=$1 AND status='active'",
+      [req.params.id],
+    );
+    if (activeLoans.rows[0].total > 0) {
+      return res.status(409).json({
+        error: "Não é possível excluir este leitor enquanto houver empréstimo ativo. Registre a devolução primeiro.",
+      });
+    }
+
+    const r = await db.query(
+      "DELETE FROM readers WHERE id=$1 RETURNING id",
+      [req.params.id],
+    );
+    if (!r.rows.length)
+      return res.status(404).json({ error: "Leitor não encontrado." });
+    res.json({ message: "Leitor excluído definitivamente." });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // --- Livros -----------------------------------------------------------
 
 router.get("/books", async (_req, res) => {
@@ -853,7 +879,7 @@ router.put("/users/:id", requireAdmin, async (req, res) => {
 
 router.delete("/users/:id", requireAdmin, async (req, res) => {
   try {
-    // Bug corrigido: faltava passar [req.params.id] como parâmetro da query.
+    // Inativação: mantém o histórico e impede novo login.
     const r = await db.query(
       "UPDATE users SET active=FALSE WHERE id=$1 RETURNING id",
       [req.params.id],
@@ -861,6 +887,42 @@ router.delete("/users/:id", requireAdmin, async (req, res) => {
     if (!r.rows.length)
       return res.status(404).json({ error: "Usuário não encontrado." });
     res.json({ message: "Usuário inativado." });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Exclusão definitiva, disponível somente para administradores.
+router.delete("/users/:id/permanent", requireAdmin, async (req, res) => {
+  try {
+    if (String(req.user.id) === String(req.params.id)) {
+      return res.status(400).json({
+        error: "Não é possível excluir o usuário que está conectado.",
+      });
+    }
+
+    const target = await db.query(
+      "SELECT id, role FROM users WHERE id=$1",
+      [req.params.id],
+    );
+    if (!target.rows.length)
+      return res.status(404).json({ error: "Usuário não encontrado." });
+
+    if (target.rows[0].role === "admin") {
+      const admins = await db.query(
+        "SELECT COUNT(*)::int AS total FROM users WHERE role='admin' AND active=TRUE",
+      );
+      if (admins.rows[0].total <= 1) {
+        return res.status(409).json({
+          error: "Não é possível excluir o último administrador ativo do sistema.",
+        });
+      }
+    }
+
+    // stock_movements.user_id usa ON DELETE SET NULL, então o histórico
+    // permanece mesmo após a exclusão da conta.
+    await db.query("DELETE FROM users WHERE id=$1", [req.params.id]);
+    res.json({ message: "Usuário excluído definitivamente." });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
