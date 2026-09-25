@@ -90,6 +90,29 @@ export const App = {
     else this.showLogin();
   },
 
+  // Notificação visual usando o componente Toast do Bootstrap 5 (carregado via CDN no index.html).
+  // Substitui os alert() nativos por um aviso não bloqueante no canto da tela.
+  // type: 'danger' (erro, padrão), 'success', 'warning' ou 'info'.
+  notify(message, type = 'danger') {
+    const container = $('toast-container');
+    if (!container || typeof bootstrap === 'undefined') { alert(message); return; }
+    const bg = { danger: 'text-bg-danger', success: 'text-bg-success', warning: 'text-bg-warning', info: 'text-bg-info' }[type] || 'text-bg-dark';
+    const el = document.createElement('div');
+    el.className = `toast align-items-center ${bg} border-0`;
+    el.setAttribute('role', 'alert');
+    el.setAttribute('aria-live', 'assertive');
+    el.setAttribute('aria-atomic', 'true');
+    el.innerHTML = `
+      <div class="d-flex">
+        <div class="toast-body">${esc(message)}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
+      </div>`;
+    container.appendChild(el);
+    const toast = new bootstrap.Toast(el, { delay: 5000 });
+    el.addEventListener('hidden.bs.toast', () => el.remove());
+    toast.show();
+  },
+
   toggleTheme() { toggleTheme(); },
 
   toggleForgotPassword() {
@@ -378,7 +401,7 @@ export const App = {
     try {
       await apiFetch(`/books/${id}/permanent`, { method: 'DELETE' });
       await this.refresh();
-    } catch (e) { alert(e.message); }
+    } catch (e) { App.notify(e.message); }
   },
 
   renderLoans() {
@@ -627,7 +650,7 @@ export const App = {
   async lookupCatalog() {
     const input = document.querySelector('#book-form [name="isbn"]');
     const isbn = (input?.value || '').trim();
-    if (!isbn) return alert('Informe o ISBN antes de buscar.');
+    if (!isbn) return App.notify('Informe o ISBN antes de buscar.');
     const box = $('catalog-result');
     if (box) box.innerHTML = '<div class="lookup-loading">Consultando catálogo...</div>';
     try {
@@ -737,7 +760,7 @@ export const App = {
         await apiFetch(id ? `/books/${id}` : '/books', { method: id ? 'PUT' : 'POST', body: JSON.stringify(f) });
         this.closeModal();
         await this.refresh();
-      } catch (x) { alert(x.message); }
+      } catch (x) { App.notify(x.message); }
     });
   },
 
@@ -746,18 +769,18 @@ export const App = {
   async inactivateBook(id) {
     if (!confirm('Inativar este livro?')) return;
     try { await apiFetch(`/books/${id}`, { method: 'DELETE' }); await this.refresh(); }
-    catch (e) { alert(e.message); }
+    catch (e) { App.notify(e.message); }
   },
 
   async reactivateBook(id) {
     if (!confirm('Reativar este livro?')) return;
     try { await apiFetch(`/books/${id}/reactivate`, { method: 'PUT' }); await this.refresh(); }
-    catch (e) { alert(e.message); }
+    catch (e) { App.notify(e.message); }
   },
 
   openLoanModal() {
     const active = state.books.filter(b => b.active && b.available_quantity > 0);
-    if (!active.length) { alert('Não há livros disponíveis para empréstimo.'); return; }
+    if (!active.length) { App.notify('Não há livros disponíveis para empréstimo.'); return; }
     const s = settings();
     const due = new Date();
     due.setDate(due.getDate() + Number(s.defaultDueDays || 7));
@@ -798,14 +821,14 @@ export const App = {
         await apiFetch('/loans', { method: 'POST', body: JSON.stringify(f) });
         this.closeModal();
         await this.refresh();
-      } catch (x) { alert(x.message); }
+      } catch (x) { App.notify(x.message); }
     });
   },
 
   async returnLoan(id) {
     if (!confirm('Confirmar devolução deste empréstimo?')) return;
     try { await apiFetch(`/loans/${id}/return`, { method: 'PUT', body: JSON.stringify({}) }); await this.refresh(); }
-    catch (e) { alert(e.message); }
+    catch (e) { App.notify(e.message); }
   },
 
   openReaderModal(fromLoan = false, id = null) {
@@ -838,7 +861,7 @@ export const App = {
         this.closeModal();
         await this.refresh();
         if (fromLoan) this.openLoanModal();
-      } catch (x) { alert(x.message); }
+      } catch (x) { App.notify(x.message); }
     });
   },
 
@@ -847,7 +870,7 @@ export const App = {
   async inactivateReader(id) {
     if (!confirm('Inativar este leitor? Ele continuará no histórico, mas não poderá receber novos empréstimos.')) return;
     try { await apiFetch(`/readers/${id}`, { method: 'DELETE' }); await this.refresh(); }
-    catch (e) { alert(e.message); }
+    catch (e) { App.notify(e.message); }
   },
 
   async deleteReaderPermanently(id) {
@@ -856,7 +879,7 @@ export const App = {
     try {
       await apiFetch(`/readers/${id}/permanent`, { method: 'DELETE' });
       await this.refresh();
-    } catch (e) { alert(e.message); }
+    } catch (e) { App.notify(e.message); }
   },
 
   openCategoryModal(id = null) {
@@ -877,7 +900,7 @@ export const App = {
         await apiFetch(id ? `/categories/${id}` : '/categories', { method: id ? 'PUT' : 'POST', body: JSON.stringify(f) });
         this.closeModal();
         await this.refresh();
-      } catch (x) { alert(x.message); }
+      } catch (x) { App.notify(x.message); }
     });
   },
 
@@ -886,7 +909,7 @@ export const App = {
   async deleteCategory(id) {
     if (!confirm('Excluir esta categoria?')) return;
     try { await apiFetch(`/categories/${id}`, { method: 'DELETE' }); await this.refresh(); }
-    catch (e) { alert(e.message); }
+    catch (e) { App.notify(e.message); }
   },
 
   openUserModal(id = null) {
@@ -923,7 +946,7 @@ export const App = {
         await apiFetch(id ? `/users/${id}` : '/users', { method: id ? 'PUT' : 'POST', body: JSON.stringify(f) });
         this.closeModal();
         await this.refresh();
-      } catch (x) { alert(x.message); }
+      } catch (x) { App.notify(x.message); }
     });
   },
 
@@ -935,7 +958,7 @@ export const App = {
     try {
       await apiFetch(`/users/${id}/permanent`, { method: 'DELETE' });
       await this.refresh();
-    } catch (e) { alert(e.message); }
+    } catch (e) { App.notify(e.message); }
   },
 
   saveSettings() {
@@ -946,7 +969,7 @@ export const App = {
       defaultMinimumStock: Number(f.get('defaultMinimumStock')) || 2
     });
     applyTheme($('settings-theme').value);
-    alert('Configurações salvas.');
+    App.notify('Configurações salvas.', 'success');
     this.render();
   }
 };

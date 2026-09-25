@@ -19,10 +19,47 @@ const PORT = process.env.PORT || 3000;
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(origin => origin.trim()).filter(Boolean);
 app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : true, credentials: true }));
+
+// Força HTTPS em produção. O Render (e a maioria dos provedores) termina o TLS
+// na borda e repassa a requisição por HTTP internamente, sinalizando o protocolo
+// original no header "x-forwarded-proto" — por isso a checagem abaixo, e não
+// apenas req.secure.
+app.set('trust proxy', 1);
 app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && req.headers['x-forwarded-proto'] !== 'https') {
+    return res.redirect(301, `https://${req.headers.host}${req.originalUrl}`);
+  }
+  next();
+});
+
+app.use((req, res, next) => {
+  // Cabeçalhos de segurança básicos (proteção contra XSS, clickjacking, sniffing e
+  // reforço do uso de HTTPS). Mantidos simples de propósito: cobrem o essencial
+  // sem exigir dependências novas no projeto.
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      // 'unsafe-inline' é necessário porque a interface usa atributos onclick/onchange
+      // no HTML; ainda assim a diretiva já bloqueia scripts de qualquer origem não listada.
+      "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+      "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "img-src 'self' data: https:",
+      "connect-src 'self'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+    ].join('; '),
+  );
+  if (process.env.NODE_ENV === 'production') {
+    // HSTS: instrui o navegador a só acessar o site via HTTPS pelos próximos 180 dias.
+    res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+  }
   next();
 });
 app.use(express.json({ limit: '1mb' }));

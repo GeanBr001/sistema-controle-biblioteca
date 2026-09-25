@@ -8,7 +8,7 @@ O sistema Estante Virtual foi desenvolvido para centralizar a operação de uma 
 
 ## Tecnologias
 
-- Frontend: HTML, CSS e JavaScript com módulos ES.
+- Frontend: HTML, CSS e JavaScript com módulos ES; Bootstrap 5 (via CDN) para o componente de notificações (Toast).
 - Backend: Node.js e Express.
 - Banco de dados: PostgreSQL hospedado no Supabase.
 - Upload de arquivos: Multer (capas de livro).
@@ -73,9 +73,25 @@ npm start
 
 Acesse `http://localhost:3000`.
 
-## Observação de segurança
+## Segurança
 
 O backend já implementa sessão assinada (HMAC) em cookie HttpOnly, autorização por perfil (admin/bibliotecário), política mínima de senha (8+ caracteres, com maiúscula e número) e CORS configurado. Antes de usar com dados reais de uma instituição, troque a senha de administrador de exemplo e defina `SESSION_SECRET` com um valor próprio em produção — o sistema usa um valor padrão apenas para desenvolvimento local.
+
+Além disso, o sistema trata explicitamente os três pontos abaixo:
+
+**Proteção contra SQL Injection** — todas as consultas em `backend/routes/libraryRoutes.js` usam *prepared statements* do driver `pg`, com parâmetros posicionais (`$1`, `$2`, ...) em vez de concatenação de string. O valor digitado pelo usuário nunca é inserido diretamente no texto do SQL, então não é possível "escapar" da query alterando seu comportamento.
+```js
+// nunca assim: `SELECT * FROM users WHERE email='${email}'`  <- vulnerável
+await db.query('SELECT * FROM users WHERE LOWER(email)=LOWER($1) LIMIT 1', [email.trim()]);
+```
+
+**Proteção contra XSS (Cross-Site Scripting)** — todo dado vindo do banco ou do usuário que é inserido no HTML da interface passa pela função `esc()` (`frontend/js/app.js`), que converte `< > & " '` em entidades HTML antes de qualquer `innerHTML`. Isso impede que um título de livro, nome de leitor etc. cadastrado com uma tag `<script>` seja executado no navegador de outro usuário. O servidor também envia o cabeçalho `Content-Security-Policy`, que restringe de quais origens o navegador pode carregar scripts e estilos (apenas o próprio domínio e o CDN do Bootstrap), reduzindo o impacto de um script malicioso que eventualmente consiga ser injetado.
+
+**Uso de HTTPS na comunicação cliente-servidor** — em produção (`NODE_ENV=production`), o servidor: (1) redireciona toda requisição HTTP para HTTPS (checando o cabeçalho `x-forwarded-proto`, que é como o Render informa o protocolo original, já que o TLS é finalizado na borda do provedor); (2) envia o cabeçalho `Strict-Transport-Security` (HSTS), instruindo o navegador a só acessar o site via HTTPS pelos próximos 180 dias, mesmo que o usuário digite `http://` na barra de endereço; (3) marca o cookie de sessão como `Secure` em produção, para que ele só trafegue em conexões criptografadas. O certificado TLS em si é fornecido automaticamente pelo provedor de hospedagem (Render), não sendo necessário gerenciá-lo manualmente.
+
+Esses três pontos ficam concentrados em `backend/server.js` (cabeçalhos e redirecionamento), `backend/routes/libraryRoutes.js` (consultas parametrizadas) e `frontend/js/app.js` (função `esc()`).
+
+> Importante: o redirecionamento HTTPS, o HSTS e o cookie `Secure` só entram em vigor com `NODE_ENV=production`. No Render, defina essa variável de ambiente em *Environment* nas configurações do serviço (ela não é definida automaticamente).
 
 Sobre as capas enviadas por upload: no plano gratuito do Render, o disco é temporário — arquivos salvos em `uploads/covers/` (incluindo capas enviadas por upload de arquivo) são apagados a cada novo deploy ou reinício do serviço. Capas cadastradas por URL não são afetadas, pois não dependem de arquivo salvo no servidor. Para manter capas enviadas por upload de forma permanente em produção, seria necessário um serviço de armazenamento externo (ex.: Supabase Storage, Cloudinary).
 

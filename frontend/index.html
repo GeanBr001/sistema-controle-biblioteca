@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+  <!-- Bootstrap 5: usado apenas para o componente de notificações (Toast), sem interferir no layout próprio -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <link rel="stylesheet" href="css/library.css">
 </head>
 <body>
@@ -168,15 +170,15 @@
             <button class="btn primary" onclick="App.openLoanModal()">+ Novo empréstimo</button>
           </div>
           <div class="toolbar loan-toolbar">
-            <input id="loan-search" type="search" placeholder="Pesquisar por livro, leitor ou matrícula...">
-            <select id="loan-filter">
+            <input id="loan-search" type="search" placeholder="Pesquisar por livro, leitor ou matrícula..." oninput="App.renderLoans()">
+            <select id="loan-filter" onchange="App.renderLoans()" aria-label="Filtrar empréstimos">
               <option value="all">Todos os empréstimos</option>
               <option value="overdue">Atrasados</option>
               <option value="on-time">No prazo</option>
             </select>
-            <input id="loan-from" type="date" title="Empréstimos a partir desta data">
-            <input id="loan-to" type="date" title="Empréstimos até esta data">
-            <select id="loan-sort">
+            <input id="loan-from" type="date" title="Empréstimos a partir desta data" onchange="App.renderLoans()">
+            <input id="loan-to" type="date" title="Empréstimos até esta data" onchange="App.renderLoans()">
+            <select id="loan-sort" onchange="App.renderLoans()" aria-label="Ordenar empréstimos">
               <option value="due-asc">Devolução mais próxima</option>
               <option value="due-desc">Devolução mais distante</option>
               <option value="loan-desc">Mais recentes</option>
@@ -202,10 +204,10 @@
             </div>
           </div>
           <div class="toolbar return-toolbar">
-            <input id="return-search" type="search" placeholder="Pesquisar por livro, leitor ou matrícula...">
-            <input id="return-from" type="date" title="Devoluções a partir desta data">
-            <input id="return-to" type="date" title="Devoluções até esta data">
-            <select id="return-sort">
+            <input id="return-search" type="search" placeholder="Pesquisar por livro, leitor ou matrícula..." oninput="App.renderReturns()">
+            <input id="return-from" type="date" title="Devoluções a partir desta data" onchange="App.renderReturns()">
+            <input id="return-to" type="date" title="Devoluções até esta data" onchange="App.renderReturns()">
+            <select id="return-sort" onchange="App.renderReturns()" aria-label="Ordenar devoluções">
               <option value="return-desc">Mais recentes</option>
               <option value="return-asc">Mais antigas</option>
               <option value="reader-asc">Leitor A-Z</option>
@@ -384,6 +386,11 @@
     </div>
   </div>
 
+  <!-- Container dos toasts do Bootstrap (notificações de sucesso/erro no lugar do alert()) -->
+  <div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index:1080" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Bootstrap Bundle (inclui Popper) precisa carregar antes do app.js para o Toast funcionar -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   <script type="module" src="js/init.js"></script>
 </body>
 </html>
