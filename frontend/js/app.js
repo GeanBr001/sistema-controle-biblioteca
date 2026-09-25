@@ -158,6 +158,7 @@ export const App = {
         state.user = r.user;
         localStorage.setItem(SESSION_KEY, JSON.stringify(state.user));
         await this.showApp();
+        App.notify(`Bem-vindo, ${state.user.name || state.user.email}!`, 'success');
       } catch (x) { err.textContent = x.message; }
     });
   },
@@ -401,6 +402,7 @@ export const App = {
     try {
       await apiFetch(`/books/${id}/permanent`, { method: 'DELETE' });
       await this.refresh();
+      App.notify('Livro excluído definitivamente.', 'success');
     } catch (e) { App.notify(e.message); }
   },
 
@@ -760,6 +762,7 @@ export const App = {
         await apiFetch(id ? `/books/${id}` : '/books', { method: id ? 'PUT' : 'POST', body: JSON.stringify(f) });
         this.closeModal();
         await this.refresh();
+        App.notify(id ? 'Livro atualizado com sucesso.' : 'Livro cadastrado com sucesso.', 'success');
       } catch (x) { App.notify(x.message); }
     });
   },
@@ -768,13 +771,13 @@ export const App = {
 
   async inactivateBook(id) {
     if (!confirm('Inativar este livro?')) return;
-    try { await apiFetch(`/books/${id}`, { method: 'DELETE' }); await this.refresh(); }
+    try { await apiFetch(`/books/${id}`, { method: 'DELETE' }); await this.refresh(); App.notify('Livro inativado.', 'success'); }
     catch (e) { App.notify(e.message); }
   },
 
   async reactivateBook(id) {
     if (!confirm('Reativar este livro?')) return;
-    try { await apiFetch(`/books/${id}/reactivate`, { method: 'PUT' }); await this.refresh(); }
+    try { await apiFetch(`/books/${id}/reactivate`, { method: 'PUT' }); await this.refresh(); App.notify('Livro reativado.', 'success'); }
     catch (e) { App.notify(e.message); }
   },
 
@@ -821,13 +824,14 @@ export const App = {
         await apiFetch('/loans', { method: 'POST', body: JSON.stringify(f) });
         this.closeModal();
         await this.refresh();
+        App.notify('Empréstimo registrado com sucesso.', 'success');
       } catch (x) { App.notify(x.message); }
     });
   },
 
   async returnLoan(id) {
     if (!confirm('Confirmar devolução deste empréstimo?')) return;
-    try { await apiFetch(`/loans/${id}/return`, { method: 'PUT', body: JSON.stringify({}) }); await this.refresh(); }
+    try { await apiFetch(`/loans/${id}/return`, { method: 'PUT', body: JSON.stringify({}) }); await this.refresh(); App.notify('Devolução registrada com sucesso.', 'success'); }
     catch (e) { App.notify(e.message); }
   },
 
@@ -860,6 +864,7 @@ export const App = {
         await apiFetch(id ? `/readers/${id}` : '/readers', { method: id ? 'PUT' : 'POST', body: JSON.stringify(f) });
         this.closeModal();
         await this.refresh();
+        App.notify(id ? 'Leitor atualizado com sucesso.' : 'Leitor cadastrado com sucesso.', 'success');
         if (fromLoan) this.openLoanModal();
       } catch (x) { App.notify(x.message); }
     });
@@ -869,7 +874,7 @@ export const App = {
 
   async inactivateReader(id) {
     if (!confirm('Inativar este leitor? Ele continuará no histórico, mas não poderá receber novos empréstimos.')) return;
-    try { await apiFetch(`/readers/${id}`, { method: 'DELETE' }); await this.refresh(); }
+    try { await apiFetch(`/readers/${id}`, { method: 'DELETE' }); await this.refresh(); App.notify('Leitor inativado.', 'success'); }
     catch (e) { App.notify(e.message); }
   },
 
@@ -879,6 +884,7 @@ export const App = {
     try {
       await apiFetch(`/readers/${id}/permanent`, { method: 'DELETE' });
       await this.refresh();
+      App.notify('Leitor excluído definitivamente.', 'success');
     } catch (e) { App.notify(e.message); }
   },
 
@@ -900,6 +906,7 @@ export const App = {
         await apiFetch(id ? `/categories/${id}` : '/categories', { method: id ? 'PUT' : 'POST', body: JSON.stringify(f) });
         this.closeModal();
         await this.refresh();
+        App.notify(id ? 'Categoria atualizada com sucesso.' : 'Categoria cadastrada com sucesso.', 'success');
       } catch (x) { App.notify(x.message); }
     });
   },
@@ -908,7 +915,7 @@ export const App = {
 
   async deleteCategory(id) {
     if (!confirm('Excluir esta categoria?')) return;
-    try { await apiFetch(`/categories/${id}`, { method: 'DELETE' }); await this.refresh(); }
+    try { await apiFetch(`/categories/${id}`, { method: 'DELETE' }); await this.refresh(); App.notify('Categoria excluída.', 'success'); }
     catch (e) { App.notify(e.message); }
   },
 
@@ -946,6 +953,7 @@ export const App = {
         await apiFetch(id ? `/users/${id}` : '/users', { method: id ? 'PUT' : 'POST', body: JSON.stringify(f) });
         this.closeModal();
         await this.refresh();
+        App.notify(id ? 'Usuário atualizado com sucesso.' : 'Usuário cadastrado com sucesso.', 'success');
       } catch (x) { App.notify(x.message); }
     });
   },
@@ -958,6 +966,7 @@ export const App = {
     try {
       await apiFetch(`/users/${id}/permanent`, { method: 'DELETE' });
       await this.refresh();
+      App.notify('Usuário excluído definitivamente.', 'success');
     } catch (e) { App.notify(e.message); }
   },
 
