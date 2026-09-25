@@ -176,8 +176,6 @@
               <option value="overdue">Atrasados</option>
               <option value="on-time">No prazo</option>
             </select>
-            <input id="loan-from" type="date" title="Empréstimos a partir desta data" onchange="App.renderLoans()">
-            <input id="loan-to" type="date" title="Empréstimos até esta data" onchange="App.renderLoans()">
             <select id="loan-sort" onchange="App.renderLoans()" aria-label="Ordenar empréstimos">
               <option value="due-asc">Devolução mais próxima</option>
               <option value="due-desc">Devolução mais distante</option>
@@ -205,8 +203,6 @@
           </div>
           <div class="toolbar return-toolbar">
             <input id="return-search" type="search" placeholder="Pesquisar por livro, leitor ou matrícula..." oninput="App.renderReturns()">
-            <input id="return-from" type="date" title="Devoluções a partir desta data" onchange="App.renderReturns()">
-            <input id="return-to" type="date" title="Devoluções até esta data" onchange="App.renderReturns()">
             <select id="return-sort" onchange="App.renderReturns()" aria-label="Ordenar devoluções">
               <option value="return-desc">Mais recentes</option>
               <option value="return-asc">Mais antigas</option>

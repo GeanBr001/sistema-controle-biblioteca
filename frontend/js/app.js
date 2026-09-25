@@ -203,24 +203,21 @@ export const App = {
   },
 
   async loadAll() {
-    const results = await Promise.all([
+    // A rota /users só existe para administradores no backend (requireAdmin).
+    // Buscá-la para um usuário "staff" (bibliotecário) devolve 403, e como estava
+    // dentro do mesmo Promise.all, derrubava TODO o carregamento — o erro acabava
+    // aparecendo na tela de login, mesmo o login já tendo funcionado.
+    const isAdmin = state.user?.role === 'admin';
+    const [dashboard, books, categories, loans, readers, movements] = await Promise.all([
       apiFetch('/dashboard'),
       apiFetch('/books'),
       apiFetch('/categories'),
       apiFetch('/loans'),
       apiFetch('/readers'),
-      apiFetch('/users'),
       apiFetch('/stock-movements')
     ]);
-    Object.assign(state, {
-      dashboard: results[0],
-      books: results[1],
-      categories: results[2],
-      loans: results[3],
-      readers: results[4],
-      users: results[5],
-      movements: results[6]
-    });
+    const users = isAdmin ? await apiFetch('/users') : [];
+    Object.assign(state, { dashboard, books, categories, loans, readers, users, movements });
   },
 
   async refresh() {
@@ -410,8 +407,6 @@ export const App = {
     const q = ($('loan-search')?.value || '').toLowerCase().trim();
     const filter = $('loan-filter')?.value || 'all';
     const sort = $('loan-sort')?.value || 'due-asc';
-    const from = $('loan-from')?.value || '';
-    const to = $('loan-to')?.value || '';
     const today = inputDate();
 
     let active = state.loans.filter(l => l.status === 'active');
@@ -421,9 +416,6 @@ export const App = {
       const overdue = String(l.due_date || '') < today;
       if (filter === 'overdue' && !overdue) return false;
       if (filter === 'on-time' && overdue) return false;
-      const loanDate = inputDate(l.loan_date || l.created_at);
-      if (from && loanDate < from) return false;
-      if (to && loanDate > to) return false;
       return true;
     });
 
@@ -454,7 +446,7 @@ export const App = {
   },
 
   clearLoanFilters() {
-    ['loan-search', 'loan-from', 'loan-to'].forEach(id => { if ($(id)) $(id).value = ''; });
+    if ($('loan-search')) $('loan-search').value = '';
     if ($('loan-filter')) $('loan-filter').value = 'all';
     if ($('loan-sort')) $('loan-sort').value = 'due-asc';
     this.renderLoans();
@@ -478,17 +470,12 @@ export const App = {
 
   renderReturns() {
     const q = ($('return-search')?.value || '').toLowerCase().trim();
-    const from = $('return-from')?.value || '';
-    const to = $('return-to')?.value || '';
     const sort = $('return-sort')?.value || 'return-desc';
 
     let returned = state.loans.filter(l => l.status === 'returned');
     returned = returned.filter(l => {
       const haystack = `${l.book_title || ''} ${l.book_author || ''} ${l.reader_name || ''} ${l.borrower_name || ''} ${l.reader_registration || l.borrower_registration || ''}`.toLowerCase();
       if (q && !haystack.includes(q)) return false;
-      const returnDate = inputDate(l.returned_at || l.return_date);
-      if (from && returnDate < from) return false;
-      if (to && returnDate > to) return false;
       return true;
     });
 
@@ -511,7 +498,7 @@ export const App = {
   },
 
   clearReturnFilters() {
-    ['return-search', 'return-from', 'return-to'].forEach(id => { if ($(id)) $(id).value = ''; });
+    if ($('return-search')) $('return-search').value = '';
     if ($('return-sort')) $('return-sort').value = 'return-desc';
     this.renderReturns();
   },
