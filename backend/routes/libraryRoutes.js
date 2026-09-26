@@ -217,69 +217,81 @@ router.delete("/categories/:id", async (req, res) => {
 // Google Books entra primeiro porque tem cobertura bem melhor de edições brasileiras
 // que o Open Library; o Open Library fica como reserva pra quando o Google não acha nada.
 
+// Catalog lookup — consulta pública de metadados, sempre confirmada pelo bibliotecário antes de salvar.
 const catalogCache = new Map();
 
-async function lookupGoogleBooks(isbn) {
-  const response = await fetch(
-    `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}`,
-  );
-  if (!response.ok) return null;
-  const payload = await response.json();
-  const info = payload.items?.[0]?.volumeInfo;
-  if (!info) return null;
-  // Se a fonte informa o idioma e não é português, não usar — melhor "não encontrado"
-  // do que preencher com dados de uma edição em outro idioma.
-  if (info.language && info.language !== "pt") return null;
-  return {
-    title: info.title || "",
-    author: info.authors?.join(", ") || "",
-    publisher: info.publisher || "",
-    publication_year: (info.publishedDate || "").match(/\d{4}/)?.[0] || "",
-    isbn,
-    description: "",
-    category: info.categories?.[0] || "",
-    cover_image: (
-      info.imageLinks?.thumbnail ||
-      info.imageLinks?.smallThumbnail ||
-      ""
-    ).replace("http://", "https://"),
-    source: "Google Books",
-  };
-}
+router.get('/catalog/lookup', async (req, res) => {
+  const rawIsbn = String(req.query.isbn || '')
+    .replace(/[^0-9Xx]/g, '')
+    .toUpperCase();
 
-async function lookupOpenLibrary(isbn) {
-  const response = await fetch(
-    `https://openlibrary.org/api/books?bibkeys=ISBN:${encodeURIComponent(isbn)}&jscmd=data&format=json`,
-    {
-      headers: {
-        "User-Agent": "Biblioteca-TCC/1.0 (contato: admin@biblioteca.local)",
-      },
-    },
-  );
-  if (!response.ok) return null;
-  const payload = await response.json();
-  const doc = payload[`ISBN:${isbn}`];
-  if (!doc) return null;
-  // Mesma lógica: o Open Library retorna dados por "obra" e às vezes isso traz
-  // o idioma original (inglês) mesmo para o ISBN de uma edição traduzida.
-  const languages = (doc.languages || []).map((l) => l.key || "");
-  if (languages.length && !languages.includes("/languages/por")) return null;
-  return {
-    title: doc.title || "",
-    author: doc.authors?.map((a) => a.name).join(", ") || "",
-    publisher: doc.publishers?.[0]?.name || "",
-    publication_year: (doc.publish_date || "").match(/\d{4}/)?.[0] || "",
-    isbn,
-    description: "",
-    category: doc.subjects?.[0]?.name || "",
-    cover_image:
-      doc.cover?.medium ||
-      doc.cover?.large ||
-      `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`,
-    source: "Open Library",
-  };
-}
+  if (rawIsbn.length < 10) {
+    return res.status(400).json({
+      error: 'Informe um ISBN válido.'
+    });
+  }
 
+  const cached = catalogCache.get(rawIsbn);
+
+  if (cached && cached.expires > Date.now()) {
+    return res.json(cached.data);
+  }
+
+  try {
+    const response = await fetch(
+      `https://openlibrary.org/search.json?isbn=${encodeURIComponent(rawIsbn)}&limit=5`,
+      {
+        headers: {
+          'User-Agent': 'Biblioteca-TCC/1.0 (contato: admin@biblioteca.local)'
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('A fonte de catálogo não respondeu.');
+    }
+
+    const payload = await response.json();
+    const doc = payload.docs?.[0];
+
+    if (!doc) {
+      return res.status(404).json({
+        error: 'Nenhum livro encontrado para esse ISBN.'
+      });
+    }
+
+    const isbn =
+      doc.isbn?.find(x => x.length === 13) ||
+      doc.isbn?.[0] ||
+      rawIsbn;
+
+    const data = {
+      title: doc.title || '',
+      author: doc.author_name?.join(', ') || '',
+      publisher: doc.publisher?.[0] || '',
+      publication_year: doc.first_publish_year || '',
+      isbn,
+      description: '',
+      category: doc.subject?.[0] || '',
+      cover_image: doc.cover_i
+        ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg?default=false`
+        : `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`,
+      source: 'Open Library'
+    };
+
+    catalogCache.set(rawIsbn, {
+      data,
+      expires: Date.now() + 6 * 60 * 60 * 1000
+    });
+
+    res.json(data);
+
+  } catch (e) {
+    res.status(502).json({
+      error: 'Não foi possível consultar o catálogo agora.'
+    });
+  }
+});
 router.get("/catalog/lookup", async (req, res) => {
   const rawIsbn = String(req.query.isbn || "")
     .replace(/[^0-9Xx]/g, "")
